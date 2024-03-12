@@ -12,3 +12,5 @@ i1.synctex.gz
 i1.thm
 *~
 sdp-code.zip
+*.zo
+/secd/compiled

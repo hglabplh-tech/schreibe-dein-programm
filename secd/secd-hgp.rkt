@@ -1,5 +1,6 @@
 #lang deinprogramm/sdp/advanced
-(provide term)
+(provide term
+         eval-secd)
 
 ; Kapitel "Die SECD-Maschine"
 
@@ -52,6 +53,8 @@
     (and (cons? term)
          (not (equal? 'set! (first term)))
          (not (equal? 'lambda (first term)))
+          (not (equal? 'defn  (first term)))
+           (not (equal? 'fn  (first term)))
          (not (primitive? (first term))))))
 
 (define application (signature (predicate application?)))
@@ -61,7 +64,10 @@
 (define abstraction?
   (lambda (term)
     (and (cons? term)
-         (equal? 'lambda (first term)))))
+         (equal? 'lambda (first term))
+          (equal? 'defn (first term))
+          (equal? 'fn (first term))
+         )))
 
 (define abstraction (signature (predicate abstraction?)))
 
@@ -187,7 +193,7 @@
 (check-expect (term->machine-code/t '(+ 1 2))
               (list 1 2 (make-prim '+ 2)))
 
-(define term->machine-code/t-t ;; spielt hier diee Reihenfolge der cases eine Rolle?
+(define term->machine-code/t-t
   (lambda (term)
     (cond
       ((symbol? term) (list term))
@@ -366,9 +372,11 @@
     (define environment (secd-environment state))
     (define code (secd-code state))
     (define dump (secd-dump state))
+   
+    (let* ((code (cond  ((and (cons? code) (cons? (first code))) (first code)) (else code ))))
     (cond
       ((cons? code)
-       (cond
+       (cond          
          ((base? (first code))
           (make-secd (cons (first code) stack)
                      environment
@@ -422,7 +430,7 @@
               (frame-stack frame))
         (frame-environment frame)
         (frame-code frame)
-        (rest dump))))))
+        (rest dump)))))))
 
 
 ; Delta-Transition berechnen
@@ -494,7 +502,7 @@
     (if (and (empty? (secd-code state))
              (empty? (secd-dump state)))
         state
-        (secd-step* (secd-step state)) ) ))
+        (secd-step* (secd-step state)))))
 
 
 ; Evaluationsfunktion zur SECD-Maschine berechnen
@@ -507,7 +515,7 @@
   (lambda (term)
     (define value (first
                    (secd-stack
-                    (secd-step* 
+                    (secd-step* ;; the naming here is a bit confusing for me secd-step - / - secd-step*                     
                      (inject-secd term)))))
     (if (base? value)
         value
