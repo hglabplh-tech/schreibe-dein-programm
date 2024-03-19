@@ -1,0 +1,6 @@
+- Erstens Review audf secd-status (Stack, Environment, Code vor allem Dump push retrieve) und hieer die Zustandsübergänge
+- ermöglichen komplett verschachtelter Abstraktionen und möglich machen der kompletten Facetten des Schönfinkelns
+- Tail Recursion (Stack bleibt unberührt)
+- Recursion erst neuer Zustand (Clean Env.... ) dann bei Rückkehr korrekter Retriev des dann wieder aktuellen Zustands vom Dump Bereich (warum auch immrer das Dump heißt ;-) )
+- Einführung Basistypen Character, Integer, Gleitkomma, Array (Streng typisiert und frei Ducktyping (entweder / oder) ) -> Array reprsentation / list-of
+- cleanup des Überflüssigen...... 

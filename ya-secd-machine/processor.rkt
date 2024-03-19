@@ -184,14 +184,7 @@
                                                 (rest code)
                                                dump
                                                 )))
-                               ))))))
-                 
-                           
-                     
-                        
-                              
-                            
-                    
+                               ))))))                
                    
 
 (define eval-secd (lambda (ast)
