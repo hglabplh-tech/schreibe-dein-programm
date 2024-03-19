@@ -14,3 +14,6 @@ i1.thm
 sdp-code.zip
 *.zo
 /secd/compiled
+ya-secd-machine/compiled/drracket/errortrace/operations_rkt.dep
+*.dep
+*.dep

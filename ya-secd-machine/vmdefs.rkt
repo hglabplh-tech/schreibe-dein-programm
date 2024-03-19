@@ -1,6 +1,12 @@
 #lang deinprogramm/sdp/advanced
 
-(require "stack.rkt")
+(require
+  (only-in      lang/htdp-advanced
+                    procedure?
+                    [procedure? proc-fun?])
+
+  ;;lang/htdp-advanced
+  "stack.rkt")
 
 (provide make-binding binding?
          the-empty-environment
@@ -231,6 +237,7 @@
 (define-record op
   make-op op?  
   (op-code symbol)
+ ;; (op-operation "TODO: sig")
   (op-params  (list-of any))
   (op-stack-arity natural)
   (op-stack-out natural)

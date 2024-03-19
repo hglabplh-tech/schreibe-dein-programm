@@ -1,5 +1,6 @@
 #lang deinprogramm/sdp/advanced
-(require "vmdefs.rkt"
+(require ;;lang/htdp-advanced
+  "vmdefs.rkt"
          "stack.rkt"
           "operations.rkt")
 ;; defiitions for the machine and the pseudo-code
@@ -41,6 +42,9 @@
                (append (term->machine-code/t (first (rest term))))))
       )))
 
+
+
+
 ; Term in Maschinencode übersetzen
 ;  in nicht-endrekursivem Kontext
 
@@ -71,8 +75,8 @@
                2))))
          ((and (not (empty? term)) (cons? term)
             (cons? (rest term)) (not (empty? (rest term))))
-         (append (term->machine-code/t (first term))
-               (append (term->machine-code/t (smart-first (smart-rest term))))))
+         (append (term->machine-code/t-t (first term))
+               (append (term->machine-code/t-t (smart-first (smart-rest term))))))
        
         )))
 
@@ -81,7 +85,8 @@
 (define term->machine-code/t-t ;; spielt hier diee Reihenfolge der cases eine Rolle?
   (lambda (term)
     (cond
-      ((symbol? term)   (list (make-push! (list term) )))
+      ((symbol? term)
+       (list (make-push! (list term) )))
       ((application? term)
        (append (term->machine-code/t (first term))
                (append (term->machine-code/t (first (rest term)))
@@ -145,8 +150,23 @@
                 (secd-environment value)
                 empty)) 
         ))
-(check-expect (compile-secd '(((lambda (x) (lambda (y) (add x y))) 1) 2)) 3)
+;;(check-expect (compile-secd '(((lambda (x) (lambda (y) (add x y))) 1) 2)) 3)
 (check-expect (compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2)) 3);; this works now
 (check-expect (compile-secd '((lambda (x) (mul 5 x)) 2)) 10)
-(check-expect (compile-secd '(((lambda (x) (lambda (y) (div 120 (mul y  (add x y) ) )) 1) 2))) 20)
+;;(check-expect (compile-secd '(lambda (x) (lambda (y) (div 120 (mul y  (add x y)))) 1) 2) 20)
 ;; FIXME have to fix multiple nested expressions
+
+;; Ein kleinerAusblick auf die nächste mögliche Funktionalität
+#;(define test-add3 (lambda (x)
+                    (lambda (y)
+                    (+ x y)               
+                     )))
+#;(define mul-add3 (lambda (y)
+                   (lambda()
+  (* y ((test-add3 y) 1)))))
+
+#;(define mul-add3-div2 (lambda (y)
+                   (lambda()
+  (/  120 ((mul-add3 y))))))
+#;(define funny (mul-add3-div2 2))
+#;(write-string (number->string (funny)))

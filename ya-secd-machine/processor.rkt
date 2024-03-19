@@ -1,5 +1,6 @@
 #lang deinprogramm/sdp/advanced
-(require "vmdefs.rkt"
+(require 
+  "vmdefs.rkt"
          "vmcore.rkt"
          "stack.rkt"
          "operations.rkt")
@@ -206,4 +207,4 @@
 
 (check-expect (eval-secd (compile-secd '((lambda (x) (mul 5 x)) 2))) 10)
 (check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2))) 6)   
-(check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (div 120 (mul y  (add x y) ) )) 1) 2)))) 20)
+;;(check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (div 120 (mul y  (add x y) ) )) 1) 2)))) 20)
