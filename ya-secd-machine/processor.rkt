@@ -4,6 +4,9 @@
          "stack.rkt"
          "operations.rkt")
 
+
+ (define temp-stack (make-stack (list)))
+
 (define process (lambda (ast)
                   (let* ([op-stack (ast-stack ast)]
                          [code (ast-code ast)]
@@ -44,7 +47,7 @@
                                               (write-newline)
                                               (op-stack 'push! val)
                                               ) )
-                                      ((symbol? val)
+                                      ((symbol? val) ;; do the right order of income
                                        (begin
                                          (write-string "get var")
                                          (write-newline)
@@ -73,6 +76,7 @@
                                            env
                                            (rest code)
                                            dump)))
+                             
                              ((symbol? (first code))
                               (begin
                                 (op-stack 'push! (lookup-environment env (first code)))))
@@ -80,7 +84,8 @@
 
                              ((prim? (first code))                    
                               (begin
-                                (write-string "mul")
+                                (temp-stack 'push! (op-stack 'pop!))
+                                 (temp-stack 'push! (op-stack 'pop!))
                                 (write-newline)
                                 (write-string (symbol->string  (prim-operator (first code))))
                                 (write-newline)
@@ -89,8 +94,8 @@
                                 ;((pcode->fun  (prim-operator (first code)))
                                 (op-stack 'push! 
                              (apply-primitive (prim-operator (first code))
-                                (list (op-stack 'pop!)                             
-                                (op-stack 'pop!))))
+                                (list (temp-stack 'pop!)                             
+                                (temp-stack 'pop!))))
 
                                 (op-stack   'print-stack)
                                  (make-secd
@@ -199,4 +204,6 @@
                       ((secd-stack result) 'pop!)
                       )))
 
-(check-expect (eval-secd (compile-secd '((lambda (x) (* 5 x)) 2))) 10)
+(check-expect (eval-secd (compile-secd '((lambda (x) (mul 5 x)) 2))) 10)
+(check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2))) 6)   
+(check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (div 120 (mul y  (add x y) ) )) 1) 2)))) 20)

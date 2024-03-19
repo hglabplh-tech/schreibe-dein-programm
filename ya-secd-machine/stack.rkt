@@ -21,6 +21,11 @@
 
           ((push!) (set! stk (append (list (car args)) stk)))
 
+          ((push-swapped!) (set! stk (append (list (car stk)) (list (car args)) (cdr stk)))) ;; FIXME for first lement
+
+
+         ((clear!) (set! stk (list)))
+
           ;; If the message is top, the stack returns the first
           ;; element of the list in private storage, or signals an
           ;; error if that list is empty.
@@ -105,6 +110,13 @@
    (stack-two 'size)
   (new-stack 'size)
     (new-stack 'get-intern)
+    (new-stack 'push-swapped! 'A)
+    (new-stack 'push-swapped! 'B)
+    (new-stack 'push-swapped! 'C)
+    (new-stack 'push-swapped! 'D)
+     (new-stack 'push-swapped! 'E)
+    (new-stack 'push-swapped! 'F)
+    (new-stack 'print-stack)
   ))
     
  

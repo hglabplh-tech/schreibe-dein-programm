@@ -33,19 +33,27 @@
         (append-lists
          (map term->machine-code/t (rest term)))
          (list (make-prim
-               (primitive->pcode (first term))
-               (length (rest term)))))))))
+              (smart-first term)
+               2))))
+        ((and (not (empty? term)) (cons? term)
+            (cons? (rest term)) (not (empty? (rest term))))
+         (append (term->machine-code/t (first term))
+               (append (term->machine-code/t (first (rest term))))))
+      )))
 
 ; Term in Maschinencode übersetzen
 ;  in nicht-endrekursivem Kontext
+
 (: term->machine-code/t (term -> machine-code))
 (define term->machine-code/t
   (lambda (term)
     (cond
-      ((symbol? term)  (list (make-push! (list term) )))
+   
+      ((symbol? term)
+       (list (make-push! (list term) )))
       ((application? term)
        (append (term->machine-code/t (first term))
-               (append (term->machine-code/t (first (rest term)))
+               (append (term->machine-code/t (smart-first (smart-rest term)))
                        (list (make-ap)))))
       ((abstraction? term)
        (list
@@ -59,8 +67,14 @@
         (append-lists
          (map term->machine-code/t (rest term)))
         (list (make-prim
-               (primitive->pcode term)
-               (length (rest term)))))))))
+               (smart-first term)
+               2))))
+         ((and (not (empty? term)) (cons? term)
+            (cons? (rest term)) (not (empty? (rest term))))
+         (append (term->machine-code/t (first term))
+               (append (term->machine-code/t (smart-first (smart-rest term))))))
+       
+        )))
 
 (: term->machine-code/t-t (term -> machine-code))
 
@@ -83,8 +97,13 @@
         (append-lists
          (map term->machine-code/t (rest term)))
         (list (make-prim
-               (primitive->pcode (first term))
-               (length (rest term)))))))))
+              (smart-first term)
+               2))))
+         ((and (not (empty? term)) (cons? term)
+            (cons? (rest term)) (not (empty? (rest term))))
+         (append (term->machine-code/t (first term))
+               (append (term->machine-code/t (first (rest term))))))
+      )))
 
 (define new-abstract
   (lambda (sedc closure-sym)
@@ -126,5 +145,8 @@
                 (secd-environment value)
                 empty)) 
         ))
-(check-expect (compile-secd '(((lambda (x) (lambda (y) (+ x y))) 1) 2)) 3)
-(check-expect (compile-secd '((lambda (x) (* 5 x)) 2)) 10)
+(check-expect (compile-secd '(((lambda (x) (lambda (y) (add x y))) 1) 2)) 3)
+(check-expect (compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2)) 3);; this works now
+(check-expect (compile-secd '((lambda (x) (mul 5 x)) 2)) 10)
+(check-expect (compile-secd '(((lambda (x) (lambda (y) (div 120 (mul y  (add x y) ) )) 1) 2))) 20)
+;; FIXME have to fix multiple nested expressions

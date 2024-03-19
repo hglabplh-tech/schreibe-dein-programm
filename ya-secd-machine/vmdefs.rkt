@@ -16,7 +16,7 @@
          term
          abstraction?
          application?
-          var-value
+         var-value
          secd
          make-secd
          secd-stack
@@ -33,22 +33,21 @@
          ap ap?
          make-tailap
          tailap tailap?
-          make-prim
-          prim? prim
-          prim-operator
-          prim-arity
-          op
-          make-op
-          op?
-          op-code
-          op-params
-          op-stack-arity
-          op-stack-out
-          op-parm-arity
-          apply-primitive
-          primitive->pcode
-          pcode->fun
-          primitive?
+         make-prim
+         prim? prim
+         prim-operator
+         prim-arity
+         op
+         make-op
+         op?
+         op-code
+         op-params
+         op-stack-arity
+         op-stack-out
+         op-parm-arity
+         apply-primitive
+         pcode->fun
+         primitive?
          primitive-application
          primitive-application?
          make-abst
@@ -66,15 +65,24 @@
          op-code?
          instruction
          machine-code
-)
+         complex-form
+         make-complex-form
+         complex-form?
+         complex-form-prim
+         complex-form-prim-child
+         make-nop
+         nop?
+         smart-first
+         smart-rest
+         )
 
 ;;Hier der "Prozessor" Befehlssatz
 (define op-code-syms '(  push pop peek create-const
-                           load-const store-const alloc free svc-open svc-read
-                           svc-write svc-close
-                           read write
-                           store load lambda let branch apply eq?
-                           where add mul div sub mod  sqrt exp))
+                              load-const store-const alloc free svc-open svc-read
+                              svc-write svc-close
+                              read write
+                              store load lambda let branch apply eq?
+                              where add mul div sub mod  sqrt exp))
 
 (define op-code?
   (lambda (term)
@@ -84,26 +92,39 @@
         (equal? 'store term)
         (equal? 'load term)
         (equal? 'where term))))
+
 (define primitive?
   (lambda (term)
-    (or (equal? '+  term)
-        (equal? '- term)
-        (equal? '* term)
-        (equal? '/ term)
-        (equal? '% term)
-        (equal? '= term))))
+    (or (equal? 'add  term)
+        (equal? 'sub term)
+        (equal? 'mul term)
+        (equal? 'div term)
+        (equal? 'eq? term))))
 
 (define instruction
   (signature
    (mixed base
-	  symbol
+          symbol
           op
-	  ap
-	  tailap
-	  prim
-	  abst)))
+          ap
+          tailap
+          prim
+          complex-form
+          nop
+          abst)))
 
-;; here we define the stuff for machine-code
+(define complex-form-instruction
+  (signature
+   (mixed
+    base
+    symbol 
+    prim
+    nop
+    )))
+
+;; here we define the stuff for machine-code; Applikations-Instruktion
+(define-record nop
+  make-nop nop?)
 
 ; Applikations-Instruktion
 (define-record ap
@@ -130,9 +151,18 @@
 
 
 (define var-value (signature any))
+
 (define environment (signature (list-of binding)))
+
 (define machine-code (signature (list-of instruction)))
- ;;Ein Stack ist eine Liste von Werten
+
+
+
+
+(define prim-machine-code (signature (list-of complex-form-instruction)))
+
+
+;;Ein Stack ist eine Liste von Werten
 (define stack (signature any))
 (define dump (signature (list-of frame)))
 
@@ -186,6 +216,12 @@
   (prim-operator symbol)
   (prim-arity natural))
 
+(define-record complex-form
+  make-complex-form complex-form?
+  (complex-form-prim prim)
+  (complex-form-prim-child  machine-code))
+
+
 ; Eine Instruktion für generelle Anwendung
 ; Eigenschaften:
 ; - Operator
@@ -213,42 +249,28 @@
 (define term
   (signature
    (mixed symbol
-	  application
-	  abstraction
-	  primitive-application
+          application
+          abstraction
+          primitive-application
           base)))
 
 
 
-(define primitive->pcode
-  (lambda (term)
-    (cond
-     ((equal?  term (first (list '+ 'add)))
-     'add)
-       ((equal? term  (first (list '- 'sub )))
-     'sub)
-      ((equal? term  (first (list '* 'mul )))
-     'mul)
-      ((equal? term  (first (list '/ 'div )))
-     'div)
-       ((equal? term  (first (list '%  'mod )))
-     'mod)    
-      ((equal? term  (first (list '= 'eq? )))
-     'eq?))))
+
 
 (define pcode->fun
   (lambda (term)
     (cond
-     ((equal?  term 'add)
-     +)
-       ((equal?  term 'sub)
-     -)
+      ((equal?  term 'add)
+       +)
+      ((equal?  term 'sub)
+       -)
       ((equal? term  'mul)
-     *)
+       *)
       ((equal? term  'div )
-     /)  
+       /)  
       ((equal? term 'eq?)
-     equal?))))
+       equal?))))
 
 (define apply-primitive
   (lambda (primitive args)
@@ -276,6 +298,23 @@
          (not (equal? 'set! (first term)))
          (not (equal? 'lambda (first term)))
          (not (primitive? (first term))))))
+(define smart-first
+(lambda (term)
+  (cond
+    ((cons? term)
+    (first term))
+    (else (first (list term)))
+    )
+  ))
+
+(define smart-rest
+(lambda (term)
+  (cond
+    ((cons? term)
+    (rest term))
+    (else (rest (list term)))
+    )
+  ))    
 
 (define application (signature (predicate application?)))
 
@@ -293,7 +332,8 @@
 (define primitive-application?
   (lambda (term)
     (and (cons? term)
-         (primitive? (first term)))))
+         (primitive? (first term))
+         )))
 
 (define primitive-application (signature (predicate primitive-application?)))
 
@@ -315,8 +355,8 @@
 
 (define  extend-environment
   (lambda (env var-symbol var-value)   
-     (cons (make-binding var-symbol var-value)
-           (remove-environment-binding env var-symbol)  )))
+    (cons (make-binding var-symbol var-value)
+          (remove-environment-binding env var-symbol)  )))
 
 (: remove-environment-binding (environment symbol -> environment))
 
@@ -342,8 +382,8 @@
            (lookup-environment (rest environment) variable))))))
 
 (define make-empty-frame
- (lambda ()
-   (make-frame empty the-empty-environment empty )))
+  (lambda ()
+    (make-frame empty the-empty-environment empty )))
 
 (define new-abstract
   (lambda (closure-sym)
