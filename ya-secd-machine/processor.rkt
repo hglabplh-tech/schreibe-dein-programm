@@ -46,7 +46,8 @@
                                               (write-string "push constant par: ")
                                               (write-string (number->string val))
                                               (write-newline)
-                                              (op-stack 'push! val)
+                                               ((op-operation (first code)) op-stack val);; NEW e have the proceedure
+                                               ;; here it is a 'push!
                                               ) )
                                       ((symbol? val) ;; do the right order of income
                                        (begin
@@ -61,14 +62,15 @@
                                                             val)])
                                            (begin
                                            (write-string (number->string bound-value))
-                                            (op-stack 'push!  bound-value))
+                                           ((op-operation (first code)) op-stack bound-value)
+                                            ;;(op-stack 'push!  bound-value))
                                            )
                                         
                                   ;; TODO: handle stack in the right way
                               
                                          ))) )
                                   
-                              )
+                              ))
                              ((base? (first code))
                               (begin
                         
@@ -143,7 +145,7 @@
                                          (extend-environment
                                           (closure-environment closure)
                                           (closure-variable closure)
-                                          (op-stack 'pop!))     ;;  (first stack))
+                                          (op-stack 'pop!))    
                                          (closure-code closure)
                                          dump)))
    
@@ -199,5 +201,15 @@
                       )))
 
 (check-expect (eval-secd (compile-secd '((lambda (x) (mul 5 x)) 2))) 10)
+;; this tiny scheme code is the level for the next step
+#;(check-expect (eval-secd (compile-secd '((define test-west
+                                           (lambda (x)
+                                             (lambda (y)
+                                             (mul x y)))
+                                           )
+                                         (define higher (lambda (y)
+                                                          (lambda ()
+                                                          (add 5 ((test-west y) 9)))))
+                                         ((higher 10))))) 42) ;; replace 42 the number of wisdom
 (check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2))) 6)   
 ;;(check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (div 120 (mul y  (add x y) ) )) 1) 2)))) 20)

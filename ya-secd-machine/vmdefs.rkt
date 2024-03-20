@@ -46,6 +46,7 @@
          op
          make-op
          op?
+         op-operation
          op-code
          op-params
          op-stack-arity
@@ -150,10 +151,7 @@
   (abst-code machine-code))
 
 
-;; Hier die Definition der Umgebung
-; Eine Bindung besteht aus:
-; - Variable
-; - Wer(define stack
+
 
 
 (define var-value (signature any))
@@ -162,6 +160,8 @@
 
 (define machine-code (signature (list-of instruction)))
 
+(define  proc-fun (signature (predicate proc-fun?)))
+
 
 
 
@@ -169,9 +169,12 @@
 
 
 ;;Ein Stack ist eine Liste von Werten
-(define stack (signature any))
+(define stack (signature any)) ;; ändern zum aktuellen Stand
 (define dump (signature (list-of frame)))
-
+;; Hier die Definition der Umgebung
+; Eine Bindung besteht aus:
+; - Variable
+; - Wer(define stack
 (define-record binding
   make-binding binding?
   (binding-variable symbol)
@@ -237,7 +240,7 @@
 (define-record op
   make-op op?  
   (op-code symbol)
- ;; (op-operation "TODO: sig")
+ (op-operation proc-fun)
   (op-params  (list-of any))
   (op-stack-arity natural)
   (op-stack-out natural)
