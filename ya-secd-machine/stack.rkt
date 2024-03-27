@@ -83,10 +83,13 @@
 
           ((get-intern) stk)
 
-          ((print-stack) (for-each (lambda (arg)
+          ((print-stack)
+           (printf "\nStart Stack\n")
+           (for-each (lambda (arg)                                     
               (printf "Element ~a\n" arg)
               arg)
-            stk))
+            stk)
+                         (printf "\nEnd Stack\n"))
           (else (error "unknown command"))
 
      

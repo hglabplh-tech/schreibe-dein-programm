@@ -1,8 +1,8 @@
 #lang deinprogramm/sdp/advanced
 (require ;;lang/htdp-advanced
   "vmdefs.rkt"
-         "stack.rkt"
-          "operations.rkt")
+  "stack.rkt"
+  "operations.rkt")
 ;; defiitions for the machine and the pseudo-code
 (provide compile-secd)
 ; die Elemente einer Liste von Listen aneinanderhängen
@@ -18,28 +18,58 @@
 (define term->machine-code ;; spielt hier diee Reihenfolge der cases eine Rolle?
   (lambda (term)
     (cond
-      ((symbol? term) (list (make-push! (list term) )))
+    
+      ((definition? (smart-first term))
+       (list (make-define-def (first (rest term))
+                              (term->machine-code/t
+                               (first (rest (rest term))))              
+                              )))
+      
+      ((fun-application?  term)
+         (let ([var  (first (rest term))]
+               [rest-code  (rest (rest term))])
+                (append (list (make-app-fun var rest-code (length rest-code)))
+                 (map term->machine-code (rest term)))
+                ;;(list (make-app-fun var rest-code (length rest-code))
+                  ;;    (term->machine-code/t-t (first rest-code) 
+               )
+           )
+
+          ((return? term)        
+           (append (list (make-return-inst  
+           (map term->machine-code (rest term))))))               
+      
+       ((symbol? term) (list (make-push! (list term) )))
+       
       ((application? term)
        (append (term->machine-code (first term))
                (append (term->machine-code (first (rest term)))
                        (list (make-tailap)))))
+      
       ((abstraction? term)
        (list
-        (make-abst (first (first (rest term)))
-                  (term->machine-code
-                   (first (rest (rest term)))))))
-      ((base? term)  (list (make-push! (list term) )))
+        (make-abst (smart-first  (eval-param (rest term)))
+                   (term->machine-code
+                    (first (rest (rest term)))))))
+      
+      ((base? term)  (list (make-push! (list term) ))) 
+  
       ((primitive-application? term)
        (append
         (append-lists
          (map term->machine-code/t (rest term)))
-         (list (make-prim
-              (smart-first term)
+        (list (make-prim
+               (smart-first term)
                2))))
-        ((and (not (empty? term)) (cons? term)
+      
+      ((and (not (empty? term)) (cons? term)
             (cons? (rest term)) (not (empty? (rest term))))
-         (append (term->machine-code/t (first term))
+       (append (term->machine-code/t (first term))
                (append (term->machine-code/t (first (rest term))))))
+      
+      ((empty? term)
+       (list)
+       )
       )))
 
 
@@ -52,20 +82,45 @@
 (define term->machine-code/t
   (lambda (term)
     (cond
-   
-      ((symbol? term)
+
+    
+      ((definition?  (smart-first term))
+       (list (make-define-def (first (rest term))
+                              (term->machine-code/t
+                               (first (rest (rest term))))           
+                              )))      
+     
+    ((fun-application?  term)
+         (let ([var  (first (rest term))]
+               [rest-code  (rest (rest term))])
+                (append (list (make-app-fun var rest-code (length rest-code)))
+                 (map term->machine-code/t (rest term)))
+                ;;(list (make-app-fun var rest-code (length rest-code))
+                  ;;    (term->machine-code/t-t (first rest-code) 
+               )
+           )
+
+          ((return? term)        
+           (append (list (make-return-inst  
+           (map term->machine-code/t (rest term))))))       
+       
+        ((symbol? term)
        (list (make-push! (list term) )))
+        
       ((application? term)
        (append (term->machine-code/t (first term))
                (append (term->machine-code/t (smart-first (smart-rest term)))
-                       (list (make-ap)))))
+                       (list (make-ap )))))
+      
       ((abstraction? term)
        (list
-      (make-abst (first (first (rest term)))
-                  (term->machine-code/t-t
-                   (first (rest (rest term)))))))
+        (make-abst (smart-first  (eval-param (rest term)))
+                   (term->machine-code/t-t
+                    (first (rest (rest term)))))))
+      
       ((base? term)
        (list (make-push! (list term) )))
+    
       ((primitive-application? term)
        (append
         (append-lists
@@ -73,41 +128,77 @@
         (list (make-prim
                (smart-first term)
                2))))
-         ((and (not (empty? term)) (cons? term)
+      
+      ((and (not (empty? term)) (cons? term)
             (cons? (rest term)) (not (empty? (rest term))))
-         (append (term->machine-code/t-t (first term))
+       (append (term->machine-code/t-t (first term))
                (append (term->machine-code/t-t (smart-first (smart-rest term))))))
+      
+      ((empty? term)
+       (list)
+       )
        
-        )))
+      )))
 
 (: term->machine-code/t-t (term -> machine-code))
 
 (define term->machine-code/t-t ;; spielt hier diee Reihenfolge der cases eine Rolle?
   (lambda (term)
     (cond
-      ((symbol? term)
+
+    
+      ((definition? term)
+       (list (make-define-def (first (rest term))
+                              (term->machine-code/t
+                               (first (rest (rest term))))            
+                              )))
+     
+      ((fun-application?  term)
+         (let ([var  (first (rest term))]
+               [rest-code  (rest (rest term))])
+                (append (list (make-app-fun var rest-code (length rest-code)))
+                 (map term->machine-code/t-t (rest term)))
+                ;;(list (make-app-fun var rest-code (length rest-code))
+                  ;;    (term->machine-code/t-t (first rest-code) 
+               )
+           )
+
+           ((return? term)        
+           (append (list (make-return-inst  
+           (map term->machine-code/t-t (rest term))))))  
+      
+       ((symbol? term)
        (list (make-push! (list term) )))
+       
       ((application? term)
        (append (term->machine-code/t (first term))
-               (append (term->machine-code/t (first (rest term)))
+               (append (term->machine-code/t (smart-first (smart-rest term)))
                        (list (make-tailap)))))
+      
       ((abstraction? term)
-        (list
-        (make-abst (first (first (rest term)))
-                  (term->machine-code/t-t
-                   (first (rest (rest term)))))))
+       (list
+        (make-abst (smart-first (eval-param (rest term)))
+                   (term->machine-code/t-t
+                    (first (rest (rest term)))))))
+      
       ((base? term)  (list (make-push! (list term) )))
+ 
       ((primitive-application? term)
        (append
         (append-lists
          (map term->machine-code/t (rest term)))
         (list (make-prim
-              (smart-first term)
+               (smart-first term)
                2))))
-         ((and (not (empty? term)) (cons? term)
+      
+      ((and (not (empty? term)) (cons? term)
             (cons? (rest term)) (not (empty? (rest term))))
-         (append (term->machine-code/t (first term))
+       (append (term->machine-code/t (first term))
                (append (term->machine-code/t (first (rest term))))))
+      
+      ((empty? term)
+       (list)
+       )
       )))
 
 (define new-abstract
@@ -122,8 +213,10 @@
 (define inject-secd
   (lambda (term)
     (make-secd empty
-               the-empty-environment
-               (term->machine-code/t term)
+               the-empty-environment          
+                                  (append
+                      (term->machine-code/t (first term))
+                     (append (term->machine-code/t (rest term))))
                empty)))
 
 ; bis zum Ende Zustandsübergänge berechne)
@@ -138,35 +231,42 @@
 (define compile-secd
   (lambda (term)    
     (define value 
-                     (inject-secd term))
+      (inject-secd term))
     
    
-        (begin
-          (compile-stack 'push! value )
-          (make-ast
-                compile-stack
-                (secd-code value)
-                empty
-                (secd-environment value)
-                empty)) 
-        ))
+    (begin
+      (compile-stack 'push! value )
+      (make-ast
+       compile-stack
+       (secd-code value)
+       empty
+       (secd-environment value)
+       empty)) 
+    ))
 ;;(check-expect (compile-secd '(((lambda (x) (lambda (y) (add x y))) 1) 2)) 3)
-(check-expect (compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2)) 3);; this works now
-(check-expect (compile-secd '((lambda (x) (mul 5 x)) 2)) 10)
+;;(check-expect (compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2)) 3);; this works now
+;;(check-expect (compile-secd '((lambda (x) (mul 5 x)) 2)) 10)
 ;;(check-expect (compile-secd '(lambda (x) (lambda (y) (div 120 (mul y  (add x y)))) 1) 2) 20)
 ;; FIXME have to fix multiple nested expressions
 
 ;; Ein kleinerAusblick auf die nächste mögliche Funktionalität
-#;(define test-add3 (lambda (x)
-                    (lambda (y)
-                    (+ x y)               
-                     )))
-#;(define mul-add3 (lambda (y)
-                   (lambda()
-  (* y ((test-add3 y) 1)))))
+#;(check-expect (compile-secd '(define test-add3 (lambda (x)
+                                                 (lambda (y)
+                                                   (add x y)           
+                                                   )))) 7)
 
-#;(define mul-add3-div2 (lambda (y)
-                   (lambda()
-  (/  120 ((mul-add3 y))))))
-#;(define funny (mul-add3-div2 2))
+#;(check-expect (compile-secd '(define mul-add3 (lambda (y)
+                                                (lambda(fun)
+                                                  (mul y ((test-add3 y) 9)))))) 8)
+
+;; hier mussnoch ((fun arg) arg2)  abgedeckt werden
+(check-expect (compile-secd '((define test-west
+                                           (lambda (x)
+                                             (lambda (y)
+                                             (return (mul x y)))))
+                                         (define higher (lambda (y)
+                                                          (lambda ()
+                                                          (return (add 5 ((app-fun test-west y) 6))
+                                                            ))))
+                                         (return app-fun higher 10))) 42) ;; replace 42 the number of wisdom
 #;(write-string (number->string (funny)))

@@ -1,8 +1,6 @@
-# Heading level 1
-Ein anderer Weg die SECD Maschine den SECD Compiler zu erklären:
+# Heading Ein anderer Weg die SECD Maschine den SECD Compiler zu erklären:
 
-## Heading level 2
-Was diese Abhandlung voraussetzt:
+## Was diese Abhandlung voraussetzt:
 - Kenntnisse der Abläufe in funktionalen Sprachen oder Sprachelementen
 - Grundkenntnisse über den Aufbau von Maschinen (Wie tickt z.B. ein PC was ist nötig dass er nützlich ist)
 - Mindestens die ersten drei bis vier Kapiitel von Schreibe dein Programm
@@ -16,8 +14,7 @@ Glue Code hat kann aber auch Java, C, C++,PL/1, Oder gar Cobol oder z.B.: Pascal
 hartgesottene Assembler nutzen. Funktionale Sprachen haben hier den Vorteil dass der
 Kern der Logik klarer sichtbar ist.
 
-## Heading level 2
-Ein wenig historie:
+## Ein wenig historie:
 
 Wir schreiben die Jahre 1960 -1970 die Informationstechnologie getrieben durch mathematische Theorien
 unendliche Schwierigkeiten die es zu umschiffen gilt.
@@ -43,7 +40,8 @@ die dazu führen sollte mit diesem Konstrukt SECD (Stack Environment Code Dump) 
 durch funktionale Beschreibung möglich zu machen, so dass man mit weig Maschienabhängigen Teilen durch Verwendung
 des Lambda Kalkül jede beliebige Sprache beschrieben werden kann.
 
-## Heading level 2
+## Wie tickt ein Stack und was ist lexikale Bindung ?
+
 Wie tickt ein Stack und was ist lexikale Bindung ?
 - Erst mal was ist ein Stack:
 Stack ist ein so genannter Stapelpeicher ich kenne auch bisher außer am Mainframe kaum eine CPU
@@ -76,8 +74,7 @@ und verlässlich erklären und es gäbe nur ein "Yet IN Other Words".
 
 Nun haben wir einen Abriss über ie fachlichen Grundlagen um eine SECD Maschine einfach zu erklären.
 
-## Heading level 2
-Die SECD Maschine:
+## Die SECD Maschine:
 
 Erst mal vorab ich willl mit meinen ausführungen nicht in Konkurrenz zu "Schreibe dein Programm" treten
 sondern es nur von meiner eher praktischen Siichtweise aus  erklären.
@@ -137,20 +134,107 @@ sich hirer den vorigen Zustand nicht merken.
 
 
 
+## Hier ein kurzer Abriss über die Funktionale Arbeitsweise einer sogennanten SECD Maschine:
+
+### Stack Verwendung und Zustandsänderungen / Übergänge
+
+
+Eine Schwierigkeiten beim Entwickeln einer solchen Maschine ist das Stack Handling, ein sauberes Environment und die vernünftige Logik fütr (Zustands-) Übergänge...
+
+#### Hier die wichtigsten Scenarien
+
+1. Stack
+
+Erstes Szenario ist das ausführen von Operationen wie hier z.B.: Subtraktion:
+
+Nehmen wir mal (7 - 3) alles klar gibt 4... aber ist das unserer Maschine auch ohne weiteres klar: Um etwas näher an die Maschine zu kommen erst mal eine andere Notation (- 7 3) wir ziehen einfach den Operator vor die Zahlen....
+
+Nun haben wir es ja mit einer Stack Maschine zu tun und somit sind die Operanden (Argumente) vor der Aktion auf dem Stack. 
+
+Also alles klar:
+
+Stack: Hier kommt zum tragen dass wir die Source von links nach rechts interpretieren
+
+| Stack     |
+|:----------|
+|     3     | 2 -> Hier kommt die 3
+|     7     | 1 -> Hier kommt die 7
+
+also sind wir doch glücklich !????
+
+Das untere ist das erste Element das auf den Stack kam das obere das. zeweite..... und so fort
+
+Nun ist ein Stack aber LIFO -> das letzte Element wird als erstes geholt also die 3 ...
+Damit wäre das erste Argument die 3 und das zweite. die 7 daraus würde dann (- 3 7) Ups 
+was nun. Wir revertieren den Stack so dass die Reihenfolge so aussieht
+
+| Stack     |
+|:----------|
+|    7      |
+|    3      |
+
+und siee da die Reihenfolge beim Lesen ergibt wieder (- 7 3) 
+Nun nimmt die Subtraction (z.B.: - ) die Zahlen und rechnet (wie in der Schule ;-)
+
+Und nun wohin mit dem Ergebnis ? 
+
+das Ergebnis wird gepusht also auf den Stack gelegt (die zwei. Argumente wurden vorher gepopt 
+also vom Stack genommen... also steht da jetzt :
+
+
+|  Stack    |
+|:----------|
+|     4     |
+
+
+Diese Tatsache ist dann von besonderer Bedeutung wenn es eine Folgeberechnung gibt....
+
+Lasst uns das mal betrachten:
+
+2. Stack and Terms
+
+Nun ist es ja ziemlich wenig nur eine Berechnung zu haben so könnten wir in der Notation für die Maschine z.B.: folgendes haben (* 12 (- 7 3)) alsu (12 * (7 - 3)) nun müssen wir betrachten ie dieses funktioniert:
+
+- Die Reihenfolge der Auswertung 
+
+Da wir für eine Berechnung in dieser Form erst mal den "Inneren Ausdruck" benötigen berechnen wir (- 7 3) die Art dieser Berechnung und was auf dm Stack passiert haben wir ja oben erörtert.
+das heißt unser Stack sieht so aus:
+
+- Die Entwicklung des Stack
+
+|  Stack    |
+|:----------|
+|     4     |
+
+Nun verwerten wir dieses Ergebnis und pushen den äußeren Wert 12 auf den Stack, das ergibt:
+
+ 
+|  Stack    |
+|:----------|
+|     4     |
+|    12     |
+
+auch hier müssen wir einen "Stack reverse" einbauen so dass wir folgendes erhalten:
+
+|  Stack    |
+|:----------|
+|    12     |
+|     4     |
+
+Unser Operator ist eine Multiplikation '*' also erhalten wir dann als Ergbnis
+
+|  Stack    |
+|:----------|
+|     48    |
+
+so und nun haben wir ganz toll mit Konstanten gerechnet im nächsten Abschnitt 
+werden wir jetzt die für komplexe Logik unabdingbaren Variablen betrachten. Dies läuft mit den Begriffen Envoronment und Binding
+
+#### Was ist ein Environment und ein Binding in unserem Sinne
 
 
 
+  
 
 
-
-
-
-
-
-
-
-
-
-
-Hier ein kurzer Abriss über die Funktionale Arbeitsweise einer sogennanten SECD Maschine:
 

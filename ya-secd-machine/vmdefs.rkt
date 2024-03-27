@@ -3,16 +3,25 @@
 (require
   (only-in      lang/htdp-advanced
                     procedure?
-                    [procedure? proc-fun?])
-
+                     [procedure? proc-fun?])
+ (only-in      lang/htdp-advanced
+                    list?                   
+                    [list? list-data?])
+ "stack.rkt")
+  
+;;(list-data? 5)
+;;(list-data?  '(6 7 8 9))
+;;(list-data?  '(6))
+;;(cons?  '(6))
   ;;lang/htdp-advanced
-  "stack.rkt")
+  
 
 (provide make-binding binding?
          the-empty-environment
          extend-environment
          remove-environment-binding
          lookup-environment
+         lookup-act-environment
          make-empty-frame
          make-frame
          frame?
@@ -71,16 +80,33 @@
          ast-dump
          op-code?
          instruction
-         machine-code
-         complex-form
-         make-complex-form
-         complex-form?
-         complex-form-prim
-         complex-form-prim-child
+         machine-code  
          make-nop
          nop?
          smart-first
          smart-rest
+         definable
+         definition?
+         define-val
+         define-def
+         define-def?
+         define-def-bind
+         define-def-value
+         make-define-def
+         eval-param
+          fun-application?
+         app-fun
+         app-fun?
+         make-app-fun
+         app-fun-variable
+         app-fun-params
+         app-fun-arity
+         return?
+         return-inst
+         return-inst?
+         make-return-inst
+         return-inst-thing
+      
          )
 
 ;;Hier der "Prozessor" Befehlssatz
@@ -110,13 +136,16 @@
 
 (define instruction
   (signature
-   (mixed base
+   (mixed 
+    base
           symbol
           op
           ap
           tailap
           prim
           complex-form
+          define-def
+          apply-fun
           nop
           abst)))
 
@@ -135,12 +164,14 @@
 
 ; Applikations-Instruktion
 (define-record ap
-  make-ap ap?)
+  make-ap ap?
+  )
 
 ; Eine endrekursive Applikations-Instruktion ist ein Wert
 ;   (make-tailap)
 (define-record tailap
-  make-tailap tailap?)
+  make-tailap tailap?
+  )
 
 ; Eine Abstraktions-Instruktion hat folgende Eigenschaften:
 ; - Parameter (eine Variable)
@@ -150,9 +181,24 @@
   (abst-variable symbol)
   (abst-code machine-code))
 
+(define eval-param (lambda (term)
+                     (if (empty? term)
+                          'no-parm-nop
+                          (first term))))
 
+; Eine Deefinitions-Instruktion hat folgende Eigenschaften:
+; -  Ein Bezeichner
+; -  ein Symbol ein Base eine Abstraction eine Applikation... 
+(define-record define-def
+  make-define-def  define-def?
+  (define-def-bind symbol)
+  (define-def-value define-val))
 
+(define definable (signature (mixed abst ap symbol base binding)))
 
+(define define-val (signature (list-of definable)))
+
+(define apply-fun (signature (list-of definable)))
 
 (define var-value (signature any))
 
@@ -225,11 +271,29 @@
   (prim-operator symbol)
   (prim-arity natural))
 
+
+
+; Eine Instruktion für eine Funktions Applikation hat folgende
+; Eigenschaften:
+; - Bezeichner
+; - Stelligkeit
+(define-record app-fun
+  make-app-fun app-fun?
+  (app-fun-variable symbol)
+  (app-fun-params (list-of symbol))
+  (app-fun-arity natural))
+  
+
 (define-record complex-form
   make-complex-form complex-form?
   (complex-form-prim prim)
   (complex-form-prim-child  machine-code))
 
+(define return-sig (signature (mixed instruction closure )))
+;; Hier die definition der return - Operation  (Werte Rückgabe einer Funktion)
+(define-record return-inst
+  make-return-inst return-inst?
+  (return-inst-thing return-sig))
 
 ; Eine Instruktion für generelle Anwendung
 ; Eigenschaften:
@@ -254,6 +318,16 @@
   (lambda (term)
     (or (boolean? term)
         (number? term))))
+
+(: return? (any -> boolean))
+(define return?
+  (lambda (term)
+    (and (cons? term)        
+         (equal?  'return (first term)))))
+        
+
+
+
 
 (define base (signature (predicate base?)))
 (define term
@@ -292,6 +366,8 @@
       ((equal? primitive 'eq?)
        (equal? (first args) (first (rest args))))
       ((equal? primitive 'mul)
+
+     
        (* (first args) (first (rest args))))
       ((equal? primitive 'div)
        (/ (first args) (first (rest args)))))))
@@ -304,10 +380,13 @@
 (: application? (any -> boolean))
 (define application?
   (lambda (term)
-    (and (cons? term)
-         (not (equal? 'set! (first term)))
-         (not (equal? 'lambda (first term)))
-         (not (primitive? (first term))))))
+    (and (cons? term)         
+         (not (equal? 'lambda (first term)))       
+          (not (equal? 'define (first term)))
+         (not (primitive? (first term)))
+         (not (fun-application? term)))))
+
+
 (define smart-first
 (lambda (term)
   (cond
@@ -316,6 +395,8 @@
     (else (first (list term)))
     )
   ))
+
+
 
 (define smart-rest
 (lambda (term)
@@ -326,14 +407,24 @@
     )
   ))    
 
+
 (define application (signature (predicate application?)))
+
+
+; Prädikat für Abstraktionen
+(: definition? (any -> boolean))
+(define definition? (lambda (term)
+                   (equal?  term 'define)  ))
+
+
 
 ; Prädikat für Abstraktionen
 (: abstraction? (any -> boolean))
 (define abstraction?
   (lambda (term)
     (and (cons? term)
-         (equal? 'lambda (first term)))))
+         (equal? 'lambda (first term))
+         )))
 
 (define abstraction (signature (predicate abstraction?)))
 
@@ -344,6 +435,15 @@
     (and (cons? term)
          (primitive? (first term))
          )))
+
+; Prädikat für higher order Applikationen
+(: fun-application? (any -> boolean))
+(define fun-application?
+  (lambda (term)
+    (and (cons? term)
+         (equal? (first term) 'app-fun)
+         )))
+
 
 (define primitive-application (signature (predicate primitive-application?)))
 
@@ -380,16 +480,33 @@
            (cons (first environment)
                  (remove-environment-binding (rest environment) variable)))))))
 
-(: lookup-environment (environment symbol -> var-value))
+(: lookup-act-environment (environment symbol -> var-value))
 
-(define lookup-environment
+(define lookup-act-environment
   (lambda (environment variable)
     (cond
-      ((empty? environment) (violation "unbound variable"))
+      ((empty? environment) empty)
       ((cons? environment)
        (if (equal? variable (binding-variable (first environment)))
            (binding-value (first environment))
-           (lookup-environment (rest environment) variable))))))
+           (lookup-act-environment (rest environment) variable))))))
+
+(define lookup-environment
+  (lambda (environment dump variable)
+    (let* ((act-val (lookup-act-environment environment variable)))
+          (cond ((not (empty? act-val)) act-val)
+                               (else  (env-lookup-helper dump variable)
+      )))))
+
+(define env-lookup-helper (lambda (dump variable)
+                            (let* ([env (frame-environment (first dump))]
+                                      [binding (lookup-act-environment env variable)])
+                              (if (empty? binding)
+                                  (if (empty? dump)
+                                       (env-lookup-helper (rest dump) variable)
+                                      binding)
+                                  binding
+                              ))))
 
 (define make-empty-frame
   (lambda ()
