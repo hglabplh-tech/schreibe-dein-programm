@@ -248,14 +248,6 @@
                                            
                                
                                             ))))))))
-
-                             ((return-inst? (first code))
-                                   (op-stack 'push! ( really-process
-                                  (make-secd
-                                   op-stack
-                                   env
-                                  (first (return-inst-thing (first code)))
-                                   dump))))
                              
                              ((ap? (first code))
                               (let ([parameter-binding (op-stack 'pop!)]
@@ -345,11 +337,11 @@
 (check-expect  (eval-secd  (compile-secd'((define test-west
                                            (lambda (x)
                                              (lambda (y)
-                                             (return (mul x y)))))
+                                             (mul x y))))
                                          (define higher (lambda (y)
                                                           (lambda ()
-                                                          (return (add 5 ((app-fun test-west y) 6))
-                                                            ))))
-                                         (return app-fun higher 10)))) 42) ; wisdom
+                                                          (add 5 ((app-fun test-west y) 6))
+                                                            )))
+                                         (app-fun higher 10)))) 42) ; wisdom
 ;(check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2))) 6)   
 ;;(check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (div 120 (mul y  (add x y) ) )) 1) 2)))) 20)

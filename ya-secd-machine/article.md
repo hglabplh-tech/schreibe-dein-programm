@@ -1,4 +1,4 @@
-# Heading Ein anderer Weg die SECD Maschine den SECD Compiler zu erklären:
+# Ein anderer Weg die SECD Maschine den SECD Compiler zu erklären:
 
 ## Was diese Abhandlung voraussetzt:
 - Kenntnisse der Abläufe in funktionalen Sprachen oder Sprachelementen
@@ -59,11 +59,11 @@ Nun zur lexikalen Bindung von Bezeichnern in der Umgebung (Environment) :
 Hier eine Seite auf der das kurz und knapp beschrieben ist.
 Genauer Verfasser für mich nicht zuordenbar:
 
-https://homepages.thm.de/~hg51/Veranstaltungen/PKR-15/Folien/pkr-02.pdf
+[https://homepages.thm.de/~hg51/Veranstaltungen/PKR-15/Folien/pkr-02.pdf](url)
 
 Sie finden auch tief gehende Erkllärungen in den Abhandlungen meines Informatiker-Kollegen Mike Sperber
 z.B.: auf der Seite:
-https://www.deinprogramm.de
+[https://www.deinprogramm.de](url)
 
 Duiese Seite enttand im Zuge der Vermittlung der Informatik Grundkenntnisse und deren Weiterführung
 an der Universität Tübingen. Diese Quellen sind sehr zuverlässig und exakt in der fachlichen Darstellung
@@ -143,7 +143,7 @@ Eine Schwierigkeiten beim Entwickeln einer solchen Maschine ist das Stack Handli
 
 #### Hier die wichtigsten Scenarien
 
-1. Stack
+1. Stack (The 'S' of SECD)
 
 Erstes Szenario ist das ausführen von Operationen wie hier z.B.: Subtraktion:
 
@@ -228,9 +228,92 @@ Unser Operator ist eine Multiplikation '*' also erhalten wir dann als Ergbnis
 |     48    |
 
 so und nun haben wir ganz toll mit Konstanten gerechnet im nächsten Abschnitt 
-werden wir jetzt die für komplexe Logik unabdingbaren Variablen betrachten. Dies läuft mit den Begriffen Envoronment und Binding
+werden wir jetzt die für komplexe Logik unabdingbaren Variablen betrachten. Dies läuft mit den Begriffen Environment (Umgebung) und Binding
 
-#### Was ist ein Environment und ein Binding in unserem Sinne
+#### Was ist ein Environment und ein Binding in unserem Sinne. (Das 'E' von SECD)
+
+Um Variablen (Bindungen von Symbolen / Strings / Adressen zu einem Datum) einzuführen müssen
+wir einen Kontext haben in dem eine gültige Bindung möglich ist. Zu dem Konzept der Umgebung und der Bindung auch in Zusammenarbeit mit dem Stack später mehr. Da werden wir auch die Referenzierung einer Bindung durchgehen.
+Jetzt aber erst mal ein kleiner Exkurs zur Logik- und Begriffserklärung....
+
+1. Kleiner Exkurs / Komponenten und abgedeckte Funktionalität einer SECD Maschine
+
+- Abstraktion definition einer Higher Order Funktion
+
+Eine Abstraktion ist grob gesagt das Verfassen einer statischen Funktion die später mit eeinem Environment und dem aktuellen Stack zu einer Closure wird (Clojure = Higher Order mit Umgebung und aktuellem Maschinenstatus)
+
+- Applikation (Funktionsaufruf // Closure)
+
+Eine Applikation ist der Aufruf der Abläufe einer Abstraktion. Nun können wir nicht einfach nur den statischen Code aufrufen. Die Applikation tut folgendes:
+
+Initialisierung des Stack
+Setzen eines Environments (Umgebung) mit der gearbeitet wird
+Setzen des nennen wir es mal 'IP' (Instruction Pointer) auf den auszuführenden Codes
+Nun der eigentliche Aufruf
+
+- Primitive Operationen (eigentlich auch so etwas wie eine Applikation)
+
+Der Einfachheit halber gönnen wir uns eine Ausnahme zu einer Applikation um primitive Operationen wir +, *, -, / .... abzudecken:
+
+Hier werden wie oben beschrieben die Argumente auf den Stack gelegt (mit der für die Operation gültigen Arity) und die Funktion wird ausgeführt wobei das Ergebnis dann auf dem Stack landet nachdem die Argumente vom Stack geholt wurden 
+
+- Heap Speicher 
+
+Heap Speichr ist im Gegensatz zum Environment ein zusätzlicher dynamisch angelegter Speicher der auch so etwas wie Bindungen hat (jedoch nicht lexikal)
+
+- Basis Typen
+
+Als Basis Typen nehmen wir zunächst Number? (Ganzzahl, Fließkomma Zahl, später evtl komplexe Zahlen ) ... dies reicht aber nicht ganz deshalb wollen wir danach noch zusätzlich Folgendes:
+
+Character : ('Buchstaben / Sonderzeichen' / UTF8) aus diesem Datentyp können später Zeichenketten abgeleitet werden
+
+Byte Typ: 8 Bit Number (Unsigned)
+
+Speicherfeld (Array) : Ein Speicherfeld ist eine Menge eines bestimmten Daten Typ oder 'Mixed' 
+auf die im Random Access (Freier Zugriff auf Elemente) über einen Index zugegriffen werden kann
+
+Aus diesen Datentypen lassen sich dann alle anderen "höheren" Datentypen ableiten   
+
+- Zuweisungen
+
+Eine Ausnahme in der Logik sind Zuweisungen (Seiteneffekte / Zustandsbehaftet) 
+Normalerweise bekommt eine Funktion Argumente die nicht verändert werden sondern es wird ein 'Result' gebildet das komplett auf frischem Speicher ausetzt. Bei Zuweisungen nennen wir es mal 'set! (Objekt, Wert) ' wird ein BESTEHENDER Wert geändert -> Speichermanipulation. Diws wird jedoch nur selten benötigt. 
+
+- Bedingungen
+
+Bedingungen können als Primitive Operationen dargestellt werden. Interessant ist hier der Verlauf im Code so müssen zwei verschieden Zweige weitergeführt werden. Die Auswahl welcher Zweig weitergeführt wird erfolgt über das Ergebnis der Bedingung. 
+
+
+
+#### Code das ('C' von SECD)
+
+Der Code wird als Sequenz dargestellt das heißt wie bei einer Liste wird hier Element für Element durchgegangen. Je nachdem ob eine Closure kommt oder eine bedingte Verzweigung wird die Auswertung an anderer Stelle fortgeführt.
+
+
+#### Dump Rekursion / Continuation (Das 'D' von SECD)
+
+Der Dump (bei dem ich mich wundere warum er Dump heißt) ist die Protokollierung der vorigen Environments, die bei Bedarf wieder von dort geholt werden. 
+Dieese Environments werden zum Zweck der Ablage in sogenannte Frames verpackt:
+
+Frame: Stack, Environment, Code 
+
+Nun ist es so dass bei jedem Funktionsaufruf (Anwendung einer Closure) ein 'frisches' Environment (Umgebung) aus Stack, Environment, Code angelegt wird und das vorige Environment wird. in ein Frame gepackt und in den Dump 'vewrschoben'. 
+WWenn nun diese Funktion endet wird der letzte eingestellte Frame vom Dump geholt um wieder dort aufzusetzen wo man vor dem Aufruf war. 
+
+Bei einer Rekursion wird die 'normale' Rekursion und die sogenannte Endrekursion (Tail Recursion) unterschieden.
+
+Bei der ersten Form wird der Rest des Codes und der Zustand vor dem Aufruf auf den Stack gelegt um dann an der richtigen Stelle fortzufahren.
+
+Bei der Endrekursion entfällt die Ablage auf dem Stack, da der rekursive Aufruf das letzte 'Statement' in der Funktion ist unds man sich somit keinen Punkt in fder Funktion merken muss bei dem man wieder aufsetzt. 
+
+
+
+**Anmerkung:** Für eine gute Beschreibung der Regeln und des Aufbaus einer SECD empfielt sich
+[https://www.deinprogramm.de/dmda/secd.pdf](url)
+
+
+
+
 
 
 

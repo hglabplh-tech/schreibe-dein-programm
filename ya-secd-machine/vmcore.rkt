@@ -35,10 +35,6 @@
                )
            )
 
-          ((return? term)        
-           (append (list (make-return-inst  
-           (map term->machine-code (rest term))))))               
-      
        ((symbol? term) (list (make-push! (list term) )))
        
       ((application? term)
@@ -100,9 +96,6 @@
                )
            )
 
-          ((return? term)        
-           (append (list (make-return-inst  
-           (map term->machine-code/t (rest term))))))       
        
         ((symbol? term)
        (list (make-push! (list term) )))
@@ -162,10 +155,6 @@
                   ;;    (term->machine-code/t-t (first rest-code) 
                )
            )
-
-           ((return? term)        
-           (append (list (make-return-inst  
-           (map term->machine-code/t-t (rest term))))))  
       
        ((symbol? term)
        (list (make-push! (list term) )))
@@ -260,13 +249,13 @@
                                                   (mul y ((test-add3 y) 9)))))) 8)
 
 ;; hier mussnoch ((fun arg) arg2)  abgedeckt werden
-(check-expect (compile-secd '((define test-west
+(check-expect (compile-secd'((define test-west
                                            (lambda (x)
                                              (lambda (y)
-                                             (return (mul x y)))))
+                                             (mul x y))))
                                          (define higher (lambda (y)
                                                           (lambda ()
-                                                          (return (add 5 ((app-fun test-west y) 6))
-                                                            ))))
-                                         (return app-fun higher 10))) 42) ;; replace 42 the number of wisdom
+                                                          (add 5 ((app-fun test-west y) 6))
+                                                            )))
+                                         (app-fun higher 10))) 42) ;; replace 42 the number of wisdom
 #;(write-string (number->string (funny)))

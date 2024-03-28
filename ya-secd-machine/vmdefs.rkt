@@ -101,11 +101,7 @@
          app-fun-variable
          app-fun-params
          app-fun-arity
-         return?
-         return-inst
-         return-inst?
-         make-return-inst
-         return-inst-thing
+     
       
          )
 
@@ -289,11 +285,6 @@
   (complex-form-prim prim)
   (complex-form-prim-child  machine-code))
 
-(define return-sig (signature (mixed instruction closure )))
-;; Hier die definition der return - Operation  (Werte Rückgabe einer Funktion)
-(define-record return-inst
-  make-return-inst return-inst?
-  (return-inst-thing return-sig))
 
 ; Eine Instruktion für generelle Anwendung
 ; Eigenschaften:
@@ -318,15 +309,7 @@
   (lambda (term)
     (or (boolean? term)
         (number? term))))
-
-(: return? (any -> boolean))
-(define return?
-  (lambda (term)
-    (and (cons? term)        
-         (equal?  'return (first term)))))
         
-
-
 
 
 (define base (signature (predicate base?)))
