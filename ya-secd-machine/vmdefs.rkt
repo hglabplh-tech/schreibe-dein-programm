@@ -2,21 +2,26 @@
 
 (require
   (only-in      lang/htdp-advanced
-                    procedure?
-                     [procedure? proc-fun?])
- (only-in      lang/htdp-advanced
-                    list?                   
-                    [list? list-data?])
- "stack.rkt")
+                procedure?
+                [procedure? proc-fun?])
+  (only-in      lang/htdp-advanced
+                list?                   
+                [list? list-data?])
+  "stack.rkt")
   
 ;;(list-data? 5)
 ;;(list-data?  '(6 7 8 9))
 ;;(list-data?  '(6))
 ;;(cons?  '(6))
-  ;;lang/htdp-advanced
+;;lang/htdp-advanced
   
 
-(provide make-binding binding?
+(provide make-binding
+         binding
+         binding?
+         make-binding
+         binding-variable
+         binding-value
          the-empty-environment
          extend-environment
          remove-environment-binding
@@ -81,8 +86,8 @@
          op-code?
          instruction
          machine-code  
-         make-nop
-         nop?
+         make-exec
+         exec?
          smart-first
          smart-rest
          definable
@@ -91,17 +96,19 @@
          define-def
          define-def?
          define-def-bind
-         define-def-value
+         define-def-value   
          make-define-def
          eval-param
-          fun-application?
+         fun-application?
          app-fun
          app-fun?
          make-app-fun
          app-fun-variable
-         app-fun-params
-         app-fun-arity
-     
+         var-symbol?
+         stop
+         make-stop
+         stop?
+         the-stop?
       
          )
 
@@ -134,29 +141,29 @@
   (signature
    (mixed 
     base
-          symbol
-          op
-          ap
-          tailap
-          prim
-          complex-form
-          define-def
-          apply-fun
-          nop
-          abst)))
+   var-symbol
+    op
+    ap
+    tailap
+    prim
+    complex-form
+    define-def
+    apply-fun
+    abst
+    stop)))
 
 (define complex-form-instruction
   (signature
    (mixed
     base
-    symbol 
+    var-symbol 
     prim
-    nop
+   stop
     )))
 
 ;; here we define the stuff for machine-code; Applikations-Instruktion
-(define-record nop
-  make-nop nop?)
+(define-record exec
+  make-exec exec?)
 
 ; Applikations-Instruktion
 (define-record ap
@@ -169,28 +176,31 @@
   make-tailap tailap?
   )
 
+(define-record stop
+  make-stop stop?)
+
 ; Eine Abstraktions-Instruktion hat folgende Eigenschaften:
 ; - Parameter (eine Variable)
 ; - Code für den Rumpf
 (define-record abst
   make-abst abst?
-  (abst-variable symbol)
+  (abst-variable  var-symbol)
   (abst-code machine-code))
 
 (define eval-param (lambda (term)
                      (if (empty? term)
-                          'no-parm-nop
-                          (first term))))
+                         'no-parm-nop
+                         (first term))))
 
 ; Eine Deefinitions-Instruktion hat folgende Eigenschaften:
 ; -  Ein Bezeichner
 ; -  ein Symbol ein Base eine Abstraction eine Applikation... 
 (define-record define-def
   make-define-def  define-def?
-  (define-def-bind symbol)
+  (define-def-bind var-symbol)
   (define-def-value define-val))
 
-(define definable (signature (mixed abst ap symbol base binding)))
+(define definable (signature (mixed abst ap var-symbol base binding)))
 
 (define define-val (signature (list-of definable)))
 
@@ -219,7 +229,7 @@
 ; - Wer(define stack
 (define-record binding
   make-binding binding?
-  (binding-variable symbol)
+  (binding-variable var-symbol)
   (binding-value var-value))
 
 
@@ -242,7 +252,7 @@
 ; - Umgebung
 (define-record closure
   make-closure closure?
-  (closure-variable symbol)
+  (closure-variable var-symbol)
   (closure-code machine-code)
   (closure-environment environment))
 
@@ -275,9 +285,8 @@
 ; - Stelligkeit
 (define-record app-fun
   make-app-fun app-fun?
-  (app-fun-variable symbol)
-  (app-fun-params (list-of symbol))
-  (app-fun-arity natural))
+  (app-fun-variable var-symbol))
+
   
 
 (define-record complex-form
@@ -295,7 +304,7 @@
 (define-record op
   make-op op?  
   (op-code symbol)
- (op-operation proc-fun)
+  (op-operation proc-fun)
   (op-params  (list-of any))
   (op-stack-arity natural)
   (op-stack-out natural)
@@ -349,9 +358,7 @@
       ((equal? primitive 'eq?)
        (equal? (first args) (first (rest args))))
       ((equal? primitive 'mul)
-
-     
-       (* (first args) (first (rest args))))
+     (* (first args) (first (rest args))))
       ((equal? primitive 'div)
        (/ (first args) (first (rest args)))))))
 
@@ -365,30 +372,31 @@
   (lambda (term)
     (and (cons? term)         
          (not (equal? 'lambda (first term)))       
-          (not (equal? 'define (first term)))
+         (not (equal? 'define (first term)))
          (not (primitive? (first term)))
-         (not (fun-application? term)))))
+         (not (the-stop? (first term)))
+         (not (fun-application? (first term))))))
 
 
 (define smart-first
-(lambda (term)
-  (cond
-    ((cons? term)
-    (first term))
-    (else (first (list term)))
-    )
-  ))
+  (lambda (term)
+    (cond
+      ((cons? term)
+       (first term))
+      (else (first (list term)))
+      )
+    ))
 
 
 
 (define smart-rest
-(lambda (term)
-  (cond
-    ((cons? term)
-    (rest term))
-    (else (rest (list term)))
-    )
-  ))    
+  (lambda (term)
+    (cond
+      ((cons? term)
+       (rest term))
+      (else (rest (list term)))
+      )
+    ))    
 
 
 (define application (signature (predicate application?)))
@@ -397,7 +405,7 @@
 ; Prädikat für Abstraktionen
 (: definition? (any -> boolean))
 (define definition? (lambda (term)
-                   (equal?  term 'define)  ))
+                      (equal?  term 'define)  ))
 
 
 
@@ -426,6 +434,13 @@
     (and (cons? term)
          (equal? (first term) 'app-fun)
          )))
+
+(: the-stop? (any -> boolean))
+(define the-stop?
+  (lambda (term)
+       (and (cons? term)
+         (equal? (first term) 'stop))))
+
 
 
 (define primitive-application (signature (predicate primitive-application?)))
@@ -477,19 +492,19 @@
 (define lookup-environment
   (lambda (environment dump variable)
     (let* ((act-val (lookup-act-environment environment variable)))
-          (cond ((not (empty? act-val)) act-val)
-                               (else  (env-lookup-helper dump variable)
-      )))))
+      (cond ((not (empty? act-val)) act-val)
+            (else  (env-lookup-helper dump variable)
+                   )))))
 
 (define env-lookup-helper (lambda (dump variable)
                             (let* ([env (frame-environment (first dump))]
-                                      [binding (lookup-act-environment env variable)])
+                                   [binding (lookup-act-environment env variable)])
                               (if (empty? binding)
                                   (if (empty? dump)
-                                       (env-lookup-helper (rest dump) variable)
+                                      (env-lookup-helper (rest dump) variable)
                                       binding)
                                   binding
-                              ))))
+                                  ))))
 
 (define make-empty-frame
   (lambda ()
@@ -499,4 +514,18 @@
   (lambda (closure-sym)
     ( make-closure closure-sym )
     ))
+
+(: var-symbol? (any -> boolean))
+(define var-symbol (signature (predicate var-symbol?)))
+(define var-symbol?
+  (lambda (term)
+    (let ([token term])
+      (and (symbol? token)
+           (not (equal? token 'define))
+           (not (equal? token 'lambda))
+           (not (equal? token 'app-fun))
+           (not (primitive? token))
+           (not (equal? token 'stop))
+           (not (base? token)) )
+      )))
   

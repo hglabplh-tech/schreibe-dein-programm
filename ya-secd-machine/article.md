@@ -304,13 +304,15 @@ Bei einer Rekursion wird die 'normale' Rekursion und die sogenannte Endrekursion
 
 Bei der ersten Form wird der Rest des Codes und der Zustand vor dem Aufruf auf den Stack gelegt um dann an der richtigen Stelle fortzufahren.
 
-Bei der Endrekursion entfällt die Ablage auf dem Stack, da der rekursive Aufruf das letzte 'Statement' in der Funktion ist unds man sich somit keinen Punkt in fder Funktion merken muss bei dem man wieder aufsetzt. 
+Bei der Endrekursion entfällt die Ablage auf dem Stack, da der rekursive Aufruf das letzte 'Statement' in der Funktion ist und man sich somit keinen Punkt in fder Funktion merken muss bei dem man wieder aufsetzt. 
 
 
 
 **Anmerkung:** Für eine gute Beschreibung der Regeln und des Aufbaus einer SECD empfielt sich
 [https://www.deinprogramm.de/dmda/secd.pdf](url)
 
+
+#### Und nun ein Exempel zum Beweis dieser Ausführung
 
 
 

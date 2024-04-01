@@ -25,23 +25,28 @@
                                (first (rest (rest term))))              
                               )))
       
-      ((fun-application?  term)
+ ((fun-application?  term)
          (let ([var  (first (rest term))]
                [rest-code  (rest (rest term))])
-                (append (list (make-app-fun var rest-code (length rest-code)))
-                 (map term->machine-code (rest term)))
-                ;;(list (make-app-fun var rest-code (length rest-code))
-                  ;;    (term->machine-code/t-t (first rest-code) 
-               )
-           )
+           (append
+             (append-lists
+         (map term->machine-code/t rest-code))                     
+                      (list (make-app-fun var)))))
+ 
+          ((the-stop? term)
+               (append    (list (make-stop))
+                (term->machine-code (rest term))                    
+                       ))
+      
 
-       ((symbol? term) (list (make-push! (list term) )))
+       ((var-symbol? term) (list (make-push! (list term) )))
        
       ((application? term)
        (append (term->machine-code (first term))
                (append (term->machine-code (first (rest term)))
                        (list (make-tailap)))))
-      
+
+    
       ((abstraction? term)
        (list
         (make-abst (smart-first  (eval-param (rest term)))
@@ -86,18 +91,20 @@
                                (first (rest (rest term))))           
                               )))      
      
-    ((fun-application?  term)
+ ((fun-application?  term)
          (let ([var  (first (rest term))]
                [rest-code  (rest (rest term))])
-                (append (list (make-app-fun var rest-code (length rest-code)))
-                 (map term->machine-code/t (rest term)))
-                ;;(list (make-app-fun var rest-code (length rest-code))
-                  ;;    (term->machine-code/t-t (first rest-code) 
-               )
-           )
+           (append
+             (append-lists
+         (map term->machine-code/t rest-code))                     
+                      (list (make-app-fun var)))))
 
+         ((the-stop? term)
+               (append    (list (make-stop))
+                (term->machine-code/t (rest term))                    
+                       ))
        
-        ((symbol? term)
+        ((var-symbol? term)
        (list (make-push! (list term) )))
         
       ((application? term)
@@ -146,17 +153,19 @@
                                (first (rest (rest term))))            
                               )))
      
-      ((fun-application?  term)
+  ((fun-application?  term)
          (let ([var  (first (rest term))]
-               [rest-code  (rest (rest term))])
-                (append (list (make-app-fun var rest-code (length rest-code)))
-                 (map term->machine-code/t-t (rest term)))
-                ;;(list (make-app-fun var rest-code (length rest-code))
-                  ;;    (term->machine-code/t-t (first rest-code) 
-               )
-           )
+               [rest-code  (rest term)])
+           (append
+             (append-lists
+         (map term->machine-code/t rest-code))                  
+                      (list (make-app-fun var)))))
+
+       ((the-stop? term)
+               (append    (list (make-stop))
+                (term->machine-code/t-t (rest term))))
       
-       ((symbol? term)
+       ((var-symbol? term)
        (list (make-push! (list term) )))
        
       ((application? term)
@@ -253,9 +262,16 @@
                                            (lambda (x)
                                              (lambda (y)
                                              (mul x y))))
-                                         (define higher (lambda (y)
+                                         (define higher (lambda (u)
                                                           (lambda ()
-                                                          (add 5 ((app-fun test-west y) 6))
+                                                          (add 5 ((app-fun test-west u) 6))
                                                             )))
                                          (app-fun higher 10))) 42) ;; replace 42 the number of wisdom
+(check-expect  (compile-secd'((define test-west
+                                            (lambda (x)                                             
+                                              (mul x 9) (stop)))
+                                          (define higher (lambda (u)
+                                                             (add 5 (app-fun test-west u))
+                                                             stop))
+                                          (app-fun higher 10))) 42) ;
 #;(write-string (number->string (funny)))
