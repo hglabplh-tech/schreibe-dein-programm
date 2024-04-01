@@ -314,9 +314,33 @@ Bei der Endrekursion entfällt die Ablage auf dem Stack, da der rekursive Aufruf
 
 #### Und nun ein Exempel zum Beweis dieser Ausführung
 
+Wir hatten ja geshendass diese Überlegungen mit konstanten Werten wunderbar funktionieren. Nun kann man so natürlich keine flexible Logik verfassen.
 
+Wie wäre es nun wenn wir folgendes hätten
 
+x := 7
+y := 3
+z := 12 
 
+nun würde - (* 12 (- 7 3)) zu (* z (- x y)) damit haben wir nun Variablen eingeführt
+
+In einem funktionalen Programm wäre da so etwas wie:
+
+- lambda <- x ;; x geht als Parameter in das äußerste lambda
+-     lambda <- y ;; y ist dem lambda in dem äußeren lambda zugeordnet als Parameter
+-        lambda <- z ;; und wieder eine Verschachtelung mit dem z als Parameter
+-     -> {calculation} ;; siehe unten
+-     :call-it  ;; lasst uns annehmen (: call-it ) ist der Aufruf einer anonymen closure // lambda definition
+-     <- 12 ;; zugeordnet zur innersten definition
+- 	   : call-it
+-        <- 3 ;; zugeordnet zur mittleren definition
+-           : call-it
+-           <- 7 ;; zugeordnet der äußersten definition
+- :end-prog --> Ende der Aufrufe und Definitionen 
+
+--> die {calculation} ist nun (* z (- x y)).... 
+
+Jetzt haben wir der Maschine ein Environment, die Fähigkeit zu lexikaler Bindung, und das Zusammenspiel zwischen Environment Aufrufen und Stack... wofür wir dann auch den Dump benötigen wegen verschiedener Auswertungsebenen.
 
 
   
