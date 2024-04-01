@@ -1,0 +1,162 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2761
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Fehler in der SECD yet another impl.:\
+\
+1. Hier folgendes Beispiel\
+\
+-> app-tun : Namentlicher Aufruf einer Closure\
+-> add : +\
+-> define:  wie in Racket\
+-> lambda: wie in Racket\
+\
+Dieser Ausdruck wird mittlerweile ausgewertet bis auf siehe *\
+\
+'((define test-west\
+                                            (lambda (x)                                             \
+                                              (mul x 9) ))\
+                                          (define higher (lambda (u)\
+                                                             (add 5 (app-fun test-west u))\
+                                                             ))\
+                                          (app-fun higher 10)\
+                                          (app-fun higher 7) * hier funktioniert das holen des alten end nicht\
+                                          )))\
+ 2. Ein weiteres Beispiel\
+\
+((define test-west\
+                                              (lambda (x)\
+                                                (lambda (y)\
+                                                  (mul x y))))\
+                                            (define higher (lambda (u)\
+                                                             (lambda ()\
+                                                               (add 5 ((app-fun test-west u) 6))\
+                                                               )))\
+                                            (app-fun higher 10))) * hier wird ein make-app nach app-tun eingeh\'e4ngt der da nicht hingeh\'f6rt dadurch wird die Auswertung zwar gemacht aber die Maschine versucht make-app auszuwerten das allerdings hier keinen Bezug hat.\
+\
+Zu 2.\
+#<record:ast\
+ #<procedure:...d-machine/stack.rkt:7:6>\
+ (#<record:define-def\
+   test-west\
+   (#<record:abst\
+     x\
+     (#<record:op\
+       push!\
+       #<procedure:...hine/operations.rkt:6:35>\
+       (x)\
+       0\
+       1\
+       1>\
+      #<record:op\
+       push!\
+       #<procedure:...hine/operations.rkt:6:35>\
+       (9)\
+       0\
+       1\
+       1>\
+      #<record:prim mul 2>)>)>\
+  (define higher\
+    (lambda (u)\
+      (add 5 (app-fun test-west u))))\
+  (app-fun higher 10)\
+  (app-fun higher 7)) .. Hier wird kein ap eingef\'fcgt aber wie oben gesagt der Ausdruck kommt nicht zur Auswertung\
+ ()\
+ ()\
+ ()>\
+\
+Zu 1. :\
+\
+#<record:ast\
+ #<procedure:...d-machine/stack.rkt:7:6>\
+ (#<record:define-def\
+   test-west\
+   (#<record:abst\
+     x\
+     (#<record:op\
+       push!\
+       #<procedure:...hine/operations.rkt:6:35>\
+       (x)\
+       0\
+       1\
+       1>\
+      #<record:op\
+       push!\
+       #<procedure:...hine/operations.rkt:6:35>\
+       (9)\
+       0\
+       1\
+       1>\
+      #<record:prim mul 2>)>)>\
+  #<record:define-def\
+   higher\
+   (#<record:abst\
+     u\
+     (#<record:op\
+       push!\
+       #<procedure:...hine/operations.rkt:6:35>\
+       (5)\
+       0\
+       1\
+       1>\
+      #<record:op\
+       push!\
+       #<procedure:...hine/operations.rkt:6:35>\
+       (u)\
+       0\
+       1\
+       1>\
+      #<record:app-fun test-west>\
+      #<record:prim add 2>)>)>\
+  #<record:op\
+   push!\
+   #<procedure:...hine/operations.rkt:6:35>\
+   (10)\
+   0\
+   1\
+   1>\
+  #<record:app-fun higher>\
+  #<record:ap>) -> dieser   #<record:ap>) ist hier fehl am Platz und darf eigentlich nicht auftauchen\
+ ()\
+ ()\
+ ()>\
+\
+\
+\
+Hier ein Beispiel das zeigt woher das   #<record:ap>) kommt // Aufruf eines anonymen lambda :\
+Der Code\
+ '((lambda (x) (lambda (y) (add x y) 1) 2))) 3)\
+\
+Die Compiler Ausgabe:\
+\
+ #<record:ast\
+ #<procedure:...d-machine/stack.rkt:7:6>\
+ (#<record:abst\
+   x\
+   (#<record:abst\
+     y\
+     (#<record:op\
+       push!\
+       #<procedure:...hine/operations.rkt:6:35>\
+       (x)\
+       0\
+       1\
+       1>\
+      #<record:op\
+       push!\
+       #<procedure:...hine/operations.rkt:6:35>\
+       (y)\
+       0\
+       1\
+       1>\
+      #<record:prim add 2>)>)>)\
+ ()\
+ ()\
+ ()> -> hier w\'fcrde eigentlich ein #<record:ap>) hingeh\'f6ren \'85 \
+\
+Ich nehme an diese Fehler sind auf eine kleine Ursache zur\'fcckzuf\'fchren\'85 \
+\
+KNOWN BUG}

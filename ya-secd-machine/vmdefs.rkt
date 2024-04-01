@@ -374,8 +374,7 @@
          (not (equal? 'lambda (first term)))       
          (not (equal? 'define (first term)))
          (not (primitive? (first term)))
-         (not (the-stop? (first term)))
-         (not (fun-application? (first term))))))
+         )))
 
 
 (define smart-first
@@ -439,7 +438,7 @@
 (define the-stop?
   (lambda (term)
        (and (cons? term)
-         (equal? (first term) 'stop))))
+         (equal? (first term) stop))))
 
 
 

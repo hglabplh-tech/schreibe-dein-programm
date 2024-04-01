@@ -2,7 +2,10 @@
 (require ;;lang/htdp-advanced
   "vmdefs.rkt"
   "stack.rkt"
-  "operations.rkt")
+  "operations.rkt"
+  (only-in     racket
+                set!
+                [set! set-it!]))
 ;; defiitions for the machine and the pseudo-code
 (provide compile-secd)
 ; die Elemente einer Liste von Listen aneinanderhängen
@@ -13,7 +16,7 @@
 
 ;; The STACK
 
-
+(define fun-app-flag #f)
 
 (define term->machine-code ;; spielt hier diee Reihenfolge der cases eine Rolle?
   (lambda (term)
@@ -25,13 +28,20 @@
                                (first (rest (rest term))))              
                               )))
       
- ((fun-application?  term)
+((fun-application?  term)
          (let ([var  (first (rest term))]
                [rest-code  (rest (rest term))])
-           (append
-             (append-lists
-         (map term->machine-code/t rest-code))                     
-                      (list (make-app-fun var)))))
+           (begin
+            (set-it! fun-app-flag #t)
+          (let ([result (append (term->machine-code (first rest-code))
+               (append (term->machine-code (smart-first (smart-rest rest-code)))    
+                      (list (make-app-fun var))))])
+            (begin
+        (set-it! fun-app-flag #t)
+            result
+          )))))
+
+
  
           ((the-stop? term)
                (append    (list (make-stop))
@@ -41,10 +51,20 @@
 
        ((var-symbol? term) (list (make-push! (list term) )))
        
-      ((application? term)
-       (append (term->machine-code (first term))
-               (append (term->machine-code (first (rest term)))
-                       (list (make-tailap)))))
+ ((application? term)
+       (begin
+       (cond ((not fun-app-flag)
+              (begin             
+       (let ([result (append (term->machine-code (first term))
+               (append (term->machine-code (smart-first (smart-rest term)))
+                       (list (make-tailap ))))])
+       
+         result)))
+             (else (begin
+                       (set-it! fun-app-flag #f)
+                     term)))
+     
+       ))
 
     
       ((abstraction? term)
@@ -94,10 +114,17 @@
  ((fun-application?  term)
          (let ([var  (first (rest term))]
                [rest-code  (rest (rest term))])
-           (append
-             (append-lists
-         (map term->machine-code/t rest-code))                     
-                      (list (make-app-fun var)))))
+           (begin
+            (set-it! fun-app-flag #t)
+          (let ([result (append (term->machine-code/t (first rest-code))
+               (append (term->machine-code/t (smart-first (smart-rest rest-code)))    
+                      (list (make-app-fun var))))])
+            (begin
+        (set-it! fun-app-flag #t)
+            result
+          )))))
+
+
 
          ((the-stop? term)
                (append    (list (make-stop))
@@ -107,10 +134,21 @@
         ((var-symbol? term)
        (list (make-push! (list term) )))
         
-      ((application? term)
-       (append (term->machine-code/t (first term))
+  ((application? term)
+       (begin
+       (cond ((not fun-app-flag)
+              (begin             
+       (let ([result (append (term->machine-code/t (first term))
                (append (term->machine-code/t (smart-first (smart-rest term)))
-                       (list (make-ap )))))
+                       (list (make-ap ))))])
+       
+         result)))
+             (else (begin
+                       (set-it! fun-app-flag #f)
+                     term)))
+     
+       ))
+
       
       ((abstraction? term)
        (list
@@ -153,13 +191,18 @@
                                (first (rest (rest term))))            
                               )))
      
-  ((fun-application?  term)
+((fun-application?  term)
          (let ([var  (first (rest term))]
-               [rest-code  (rest term)])
-           (append
-             (append-lists
-         (map term->machine-code/t rest-code))                  
-                      (list (make-app-fun var)))))
+               [rest-code  (rest (rest term))])
+           (begin
+            (set-it! fun-app-flag #t)
+          (let ([result (append (term->machine-code/t (first rest-code))
+               (append (term->machine-code/t (smart-first (smart-rest rest-code)))    
+                      (list (make-app-fun var))))])
+            (begin
+        (set-it! fun-app-flag #t)
+            result
+          )))))
 
        ((the-stop? term)
                (append    (list (make-stop))
@@ -168,11 +211,21 @@
        ((var-symbol? term)
        (list (make-push! (list term) )))
        
-      ((application? term)
-       (append (term->machine-code/t (first term))
+  ((application? term)
+       (begin
+       (cond ((not fun-app-flag)
+              (begin             
+       (let ([result (append (term->machine-code/t (first term))
                (append (term->machine-code/t (smart-first (smart-rest term)))
-                       (list (make-tailap)))))
-      
+                       (list (make-tailap ))))])
+       
+         result)))
+             (else (begin
+                       (set-it! fun-app-flag #f)
+                     term)))
+     
+       ))
+  
       ((abstraction? term)
        (list
         (make-abst (smart-first (eval-param (rest term)))
@@ -241,7 +294,7 @@
        (secd-environment value)
        empty)) 
     ))
-;;(check-expect (compile-secd '(((lambda (x) (lambda (y) (add x y))) 1) 2)) 3)
+
 ;;(check-expect (compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2)) 3);; this works now
 ;;(check-expect (compile-secd '((lambda (x) (mul 5 x)) 2)) 10)
 ;;(check-expect (compile-secd '(lambda (x) (lambda (y) (div 120 (mul y  (add x y)))) 1) 2) 20)
@@ -269,9 +322,22 @@
                                          (app-fun higher 10))) 42) ;; replace 42 the number of wisdom
 (check-expect  (compile-secd'((define test-west
                                             (lambda (x)                                             
-                                              (mul x 9) (stop)))
+                                              (mul x 9) ))
                                           (define higher (lambda (u)
                                                              (add 5 (app-fun test-west u))
-                                                             stop))
-                                          (app-fun higher 10))) 42) ;
-#;(write-string (number->string (funny)))
+                                                             ))
+                                          (app-fun higher 10)
+                                          (app-fun higher 7) 
+                                          )) 42) ;
+
+(check-expect  (compile-secd'((define test-west
+                                            (lambda (x)                                             
+                                              (mul x 9) ))
+                                          (define higher (lambda (u)
+                                                             (add 5 (app-fun test-west u))
+                                                             ))
+                                          (app-fun higher 10)
+                                         
+                                          )) 42)
+
+(check-expect (compile-secd '((lambda (x) (lambda (y) (add x y) 1) 2))) 3)

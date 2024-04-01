@@ -369,13 +369,22 @@
 
 ;;(check-expect (eval-secd (compile-secd '((lambda (x) (mul 5 x)) 2))) 10)
 ;; this tiny scheme code is the level for the next step
-(check-expect  (eval-secd  (compile-secd'((define test-west
+#;(check-expect  (eval-secd  (compile-secd'((define test-west
                                             (lambda (x)                                             
                                               (mul x 9)))
                                           (define higher (lambda (u)
                                                            (add 5 (app-fun test-west u))
                                                            ))
                                           (app-fun higher 10)))) 42) ;
+(check-expect  (eval-secd   (compile-secd'((define test-west
+                                            (lambda (x)                                             
+                                              (mul x 9) ))
+                                          (define higher (lambda (u)
+                                                             (add 5 (app-fun test-west u))
+                                                             ))
+                                          (app-fun higher 10)
+                                          (app-fun higher 7)
+                                          ))) 42) ;
 #;(check-expect  (eval-secd  (compile-secd'((define test-west
                                               (lambda (x)
                                                 (lambda (y)
