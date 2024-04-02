@@ -406,7 +406,69 @@ Nun können wir den Code ausführen da zum statishen Code die Umgebung und die P
 
 Jetzt haben wir die Zuordnung von Environment und Code fehlen noch Stack und Dump und deren Einordnung in der Maschine.
 
-Wegen des Stack müssen wir nur das oben Beschriebene und die hier beschrieben Ausführung betrachten. Gehen wir das doch mal Schritt für Schritt durch... :
+Dazu werden wir nun die 'Maschine' drfinieren dieses Konstrukt nennen wir einfach mal SECD:
+
+
+| Element der 'Maschine'  | Beschreibung                                                     |
+|:------------------------|:-----------------------------------------------------------------|
+| secd-stack              | Der stack - Ablage Eingangs/Ausgangswerten von Instruktionen     |                         
+| secd-environment        | Das Environment ist die Umgebung zur Ablage von Bindungen        |
+| secd-code               | Hier ist der. statische Code enthalten augeführt über einen 'IP' |
+| secd-dump               | Dump -> 'Generationen' von (Environment, Stack, Code) als Frames |
+| secd?                   | Hier wieder ein Prädikat zur Bestimmung was wir hier haben       |
+| make-secd               | Und hier auch wider ein Konstruktor                              |
+
+Und hier noch was zum Dump - wie das Ebnvironment ist der Dump eine Sequenz von Werten (hier Frames) lassen wir doch ein Frame z.B. so aussehen:
+
+(define-record frame
+  make-frame frame?
+  (frame-stack stack)
+  (frame-environment environment)
+  (frame-code machine-code))
+
+
+| Element im Frame    | Beschreibung                                                       |
+|:--------------------|:-------------------------------------------------------------------|
+| frame-stack         | Der Stapel (Stack) wie er aussieht -> Zeitpunkt -> Frame-Konstrukt |
+| frame-environment   | Die Umgebung als 'Snapshot' der Umgebung bei Frame-Konstrukt       |
+| frame-code          | Der statische Code von der Stelle als das Frame erstellt wurde     |
+| frame?              | Das Prädikat                                                       |
+| make-frame          | Der Konstruktor                                                    |
+
+So nun müssten wir alles definiert haben (Inhaltlich) was wir zur Erklärung benötigen
+
+
+
+
+Wegen des Stack und dem Dump müssen wir nur das oben Beschriebene und die hier beschrieben Ausführung betrachten. Gehen wir das doch mal Schritt für Schritt durch... :
+
+
+1. Zuerst natüürlich die Definition des Lambda (Higher Order Function) das wir ausführen wollen
+2. Nun wollenn wir das Ganze zur Ausführung bringen dazu bauen wir uns unser Binding
+3. Nach dem Binding brauchen wir den Wert des 'x' -> unser Parameter auf dem Stack
+4. Wir bilden wie oben angeführt die Closure
+5. Um die Closure auszuführen ordnen wir 'x' aus Ihrer Umgebung zu da bekommen wir die 6
+6. Diese 6 kommt nun auf den Stack
+7. Da wir die Ausführung über den Stack managen schieben wir auch die Closure (siehe oben) auf den Stack
+8. Nun kommt die eigentliche Applikation -> jetzt wird die aktulle Umgebung in ein Frame (siehe oben) verpackt und in den Dump gehängt -> als jüngste 'Generation'
+9. Ok jetzt wird der Stack initialisiert und eine leere aktuelle Umgebung mitgegeben und der Code wird in der Closure abgelegt (pointer auf die statische Definition)
+10. Nun ist das 'x' an die 6 gebunden und die 6 ist auf dem Stack wo wir auch die Closure haben
+11. Jetzt steht der Ausführung nichts mehr im Weg ausgeführt wird lambda <- x ; + x 3;
+12. Nun kommt die Anweisun 'x' auf den Stack zu legen -> Parameter für die Berechnung
+13. Nun kommt die Anweisung als nächsten Parameter die 3 auf den Stack zu legen
+14. Und endlich kommt unsere Aktion -> hier eine primitive application -> '+'
+15. Erst wird der Stack reverse gebaut siehe oben... dann wird der erste und der zweite Parameter vom Stack geholt (pop!) und die Addition wird ausgeführt
+16. Die Werterückgabe erfolgt über den Stack auf dem nun das Ergebnis hier 9 abgelegt wird
+17. Nun noch der SECD Maschinenzustand und der Dump. Wir haben den alten Zustand ja im Frame dort abgelegt
+18. Jetzt 'mergen' wir den auf dem Frame abgelegten Stackzustand mit dem Momentanen Stand unseres Stack in der SECD 
+18. Wir holen das Environment von davor vom Dump
+19. Wir setzen die Ausführung dort fort wo der Stand des Frame- Code ist das heißt 1 nach dem 'return' 
+20. Nun sind wir bereit für weitere Aufrufe von diesem oder anderen Lambdas von dieser Ebene aus
+
+Nach dieser Beschreibung müssten wir ja auch obiges Beispiel mit 3 verschachtelten 'Higher Order' Funktionen dardstellen können... Lasst uns das doch mal versuchen:
+ 
+
+
 
 
 
