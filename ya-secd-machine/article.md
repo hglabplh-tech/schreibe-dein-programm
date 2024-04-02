@@ -340,10 +340,76 @@ In einem funktionalen Programm wäre da so etwas wie:
 
 --> die {calculation} ist nun (* z (- x y)).... 
 
-Jetzt haben wir der Maschine ein Environment, die Fähigkeit zu lexikaler Bindung, und das Zusammenspiel zwischen Environment Aufrufen und Stack... wofür wir dann auch den Dump benötigen wegen verschiedener Auswertungsebenen.
+Jetzt haben wir der Maschine ein Environment, die Fähigkeit zu lexikaler Bindung, und das Zusammenspiel zwischen Environment Aufrufen und Stack zuzufügen ... wofür wir dann auch den Dump benötigen wegen verschiedener Auswertungsebenen benötigen.
 
+zu unserm etwas komplexeerem Beispiel
 
+- wir haben ein Lambda mit dm Paramer 'x' dieser Parameter wird wie zu sehen ist mit der Zahl (beim Aufruf) 7 verknüpft und zwar durch die 'lexikale' Stellung .
+
+Nun müssen wir das irgendwo festhalten... denken wir uns folgenden Aufbau der Umgebung (Environment)
+
+Voraussetzungen: Die Umgebung kann mehrere Zuordnungen (Bindings) enthalten wie wäre es dafür mit -> :
+
+- Binding Definition 
   
+
+| Element des Binding  | Beschreibung                                                        |
+|:---------------------|:--------------------------------------------------------------------|
+| binding-variable     |  die Binding Variable ist etwas wie z.B.: ein Symbol / Bezeichner   |                
+| binding-value        |  der Value ist das 'Datum' das dem Bezeichner zugeordnet wird.      |
+| binding?             |  Prädikat welches sagt dies ist ein Binding (für die Logik notwendig|
+| make-binding         |  Konstruktor für unser Datenkonstrukt.                              |
+
+
+- So nun haben wir eine Definition mit der wir ein Binding (Zuordnung von Bezeichner zu Wert) abbilden können. Da es nun ziemlich wnig wäre nur ein Binding haben zu können machen wir doch Folgendes :
+
+| Bindings (Sequenz von Bindings) | Darstellung                                    |
+|:--------------------------------|:-----------------------------------------------|
+| Ein Array eine Liste            | Die sequenzielle Speicherung mehrerer Bindings |
+
+
+- Nun ist noch die Frage wann diese Zuordnung stattfindet und evtl. aufgelöst wird... :
+
+Um diese Frage zu erörtern brauchen wir di Erklärung zum nächsten Begriff der hier auch schon aufgetaucht ist.
+
+Closure : lambda <- x ; + x 3; : end-prog idst zunächst eine Definition.
+Die Beschreibung dessen was hier ausgeführt werden soll. Diese Defiition ist im Grunde nichts weiter als eine statische Definition der Vorgehensweise (was soll passieren). 
+Um nun diese. Definnition auszuführen müssen wir x (im Moment ein freischwebender Platzhalter) zuordnen dazu dient dann vom Ablauf her der Aufruf dieser Definition mit einer Konstanten.
+
+lambda <- x ; + x 3; <- 6 (Aufruf des anonymen lambda mit der Zuordnung (lexikal) x = 6): end-prog
+
+Hier kommt dann die Umgebung ins Spiel hier wird zum Zweck ddes Aufrufs ein Binding in der Umgebung abgelegt:
+
+| Element des Binding  | Konkrete Zuordnung                                                  
+|:---------------------|:--------------------------------------------------|
+| binding-variable     |  x (Bezeichner)                                   |                
+| binding-value        |  6 (Der Wert der durch den Aufruf zugeordnet wird |
+
+Nun haben wir einen wichtigen Teil der Closure... definieren wir diese mal wie folgt können wir diese Closure zur Ausführung benutzen..
+
+Mögliche Definition einer Closure:
+
+
+| Element der Closure  | Beschreibung                                    |
+|:---------------------|:------------------------------------------------|
+| closure-variable     | Der Parameter der Funktion                      |
+| closure-code         | Der auszuführende Code (+ x 3)                  |
+| closure-environment  | Die Umgebung in der x = 6 festgehalten wird     |
+| closure?             | Hier wieder ein Prädikat um Closure zu erkennen |
+| make-closure         | Wie schon bei Binding ein Konstruktor.          |
+
+Der Code enthält die statische Definition der Funktion (Higher Order Lambda)
+Die Variable ist der Parameter in dem Fall der SECD ist es für ein Lambda nur ein Parameter
+Das Environment enthält das beschriebene Binding.
+
+Nun können wir den Code ausführen da zum statishen Code die Umgebung und die Parameterbindung hinzugekomen ist.
+
+Jetzt haben wir die Zuordnung von Environment und Code fehlen noch Stack und Dump und deren Einordnung in der Maschine.
+
+Wegen des Stack müssen wir nur das oben Beschriebene und die hier beschrieben Ausführung betrachten. Gehen wir das doch mal Schritt für Schritt durch... :
+
+
+
 
 
 
