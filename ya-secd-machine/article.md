@@ -466,7 +466,104 @@ Wegen des Stack und dem Dump müssen wir nur das oben Beschriebene und die hier 
 20. Nun sind wir bereit für weitere Aufrufe von diesem oder anderen Lambdas von dieser Ebene aus
 
 Nach dieser Beschreibung müssten wir ja auch obiges Beispiel mit 3 verschachtelten 'Higher Order' Funktionen dardstellen können... Lasst uns das doch mal versuchen:
+
+Ich dachte ich würde damit auskommen keine spezielle Sprachezu benutzen und statt dessen Pseudo-Code zu schreiben, aber für das nun Folgende möchte ich doch besser Scheme / Lisp (racket) Syntax benutzen um alles effektiver darzustellen und zu schreiben.....
+
+Denken wir uns dch mal folgenden Code
+
+```scheme
+((define test-west
+                                            
+(lambda (x)                                             
+                                              
+(mul x 9) ))
+                                          
+
+(define higher 
+(lambda (u)                                                             
+(add 5 (app-fun test-west u))
+                                                             
+))
+                                          
+(app-fun higher 10)
+                                          
+(app-fun higher 7)
+                                          
+)))
+
+
+
+
+- [x] Hier haben wir mehrere Aufrufe enthalten und können dann sehen wie das ganze in der SECD gehandhabt wird. Wir werden auch noch auf die dreifach verschachtelte Funktion zurückkommen. 
+
+- Dies hier jetzt als etwas leichtere Kost:
+
+Wir haben auch hier wieder eine Abstraktion (Higher Order) -> Bescghreibung der Logik
+Hier ist das zum einen
+
+
+
+
+((define test-west
+                                            
+(lambda (x)                                             
+                                              
+(mul x 9) ))
+
+und zum Anderen
+
+
  
+(define higher 
+(lambda (u)                                                             
+(add 5 (app-fun test-west u))
+                                                             
+))
+
+
+Das 'higher' ruft hier 'test-west' auf -> das geschieht in der Zeile 
+
+    (app-fun test-west u) 
+
+und 'higher' wird mit folgender Zeile aufgerufen
+
+(app-fun higher 10)
+
+nun kommt dieser Aufruf als erstes:
+
+1. Die 10 wird mit dem 'u' verbunden u -> 10 und das Ganze wird auch dann in die Umgebung als Binding gelegt
+
+2. Jetzt wird wieder eine Closure gebaut die in der Umgebung diese Bindung hat
+3. Der Wert 10 sowie die Closure landen ebenso wie im vorigen Beispiel auf dem Stack. 
+4. Nun wird wieder geswitched und der Code add 5 (app-fun test-west u)) wird aufgerufen.
+5. Jetzt wird es lustig ... wir haben da eine 5 auf dem Stack und als zweiten Wert eine Funktion... HIIIILFEEE
+6. -> um nun also auf die zweit Zahl auf dem Stack zu kommen müssen wir die Funktion ausführen die durch Ihre Berechnung den Wert auflöst.
+7. Hierzu müssen wir ja genau den Parameter der Funktion an den Weert beim Aufruf binden...
+8. Hier erhalten wir x -> u wobei u sich in 10 auflöst. Also haben wir in der Umgebung u -> 10 und x -> u (diesen Zwischenschritt sparen wir uns bei der Auflösung) also x -> 10
+9. Nun da die Bindung da ist können wir fortfahren wie gehabt erst kommt x auf den Stack und dann die 9 das wieder umgedrreht gibt wieder 'x' = 10 als ersten Parameter und 9 als zweiten. 
+10. Der Rest ist Geschichte die Operation mul(*) wird ausgeführt holt die zwei Parametr vom Stack und schiebt das Ergebnis (90) drauf.
+11. Nach der Rückkehr wissen wir also unser zweiter Wert ist 90
+12. Dann wird wie gehabt mit 'add' verfahren.
+13. Nun kehren wir auch hier wieder zurück und holen die letzte Umgebung in Form des Frames ins hieer und jetzt als aktuelle Umgebung........ 
+
+- Nun kommt der lecker Nachtisch:
+
+erstellen wir doch als Hausafgabe diese Punkte für :
+
+(lambda (x) 
+
+	(lambda (y)  
+		(lambda (z)
+			(mul z (add x y)) 
+		12) 
+			3) 
+				7)))
+
+
+Ich hoffe das hat funktioniert ;-)			
+
+
+                                                
 
 
 
