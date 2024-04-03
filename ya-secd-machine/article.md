@@ -6,20 +6,25 @@
 - Mindestens die ersten drei bis vier Kapiitel von Schreibe dein Programm
 - Grundkenntisse Mathematik (Oberstufe)
 
-Anmerkung: Ich verzichte hier an dieser Stelle bewusst auf Code Beispiele, da sich mancher dann vielleicht
+## Zu den Übungsaufgaben
+Die Übungsaufgaben sind mit A-1..n durchnummeriert. Die Lösungen stehen in ResultOfTasks.md 
+zur Verfügung. Bitte tun sie sich den Gefallen und betrügen sie sich nicht. Der Lerneffekt geht sonst gegen Null bis darunter.
+
+### Anmerkung: 
+Ich verzichte hier an dieser Stelle bewusst auf Code Beispiele, da sich mancher dann vielleicht
 zu sehr in Details der Implementierung verirrt. So ging es mir zumindest am Anfang (vor etwas über 30 Jahren)
-Um diese Logik zu implementiren kann fast jede generelle Sprache verwendet werden... vorzugsweise  eine funktionale
-Sprache Beispiele: Scheme Lisp Clojure OCaml Haskell... um nur ein paar zu nennen... wer Spaß an etwas mehr
+Um diese Logik zu implementieren kann fast jede generelle Sprache verwendet werden... vorzugsweise  eine funktionale
+Sprache Beispiele: SCHEME, LISP, Clojure, OCaml, Haskell... um nur ein paar zu nennen... wer Spaß an etwas mehr
 Glue Code hat kann aber auch Java, C, C++,PL/1, Oder gar Cobol oder z.B.: Pascal oder für
 hartgesottene Assembler nutzen. Funktionale Sprachen haben hier den Vorteil dass der
 Kern der Logik klarer sichtbar ist.
 
-## Ein wenig historie:
+## Ein wenig Historie:
 
 Wir schreiben die Jahre 1960 -1970 die Informationstechnologie getrieben durch mathematische Theorien
 unendliche Schwierigkeiten die es zu umschiffen gilt.
 
-Nein sorry falscher Text zu viel "Star Treck" ;-)
+Nein sorry falscher Text zu viel "Star Trek" ;-)
 
 
 Ein paar Worte:
@@ -46,8 +51,8 @@ Wie tickt ein Stack und was ist lexikale Bindung ?
 - Erst mal was ist ein Stack:
 Stack ist ein so genannter Stapelpeicher ich kenne auch bisher außer am Mainframe kaum eine CPU
 die nicht auch einen Stack hat. Ein Stack ist sozusagen das "Gegenteil" einer Queue bei der Queue wird
-standardmäßig der Wert derals erstes dort eingefügt wird auch als erster wieder entnommen
-(FIFO: first in first out) wohingegen beim Stack der letzte eingeschobene Wert durc den POP als erster wieder vom Stapel
+standardmäßig der Wert der als erstes dort eingefügt wird auch als erster wieder entnommen
+(FIFO: first in first out) wohingegen beim Stack der letzte eingeschobene Wert durch den POP als erster wieder vom Stapel
 genommen wird (LIFO: Last in first out). Nun wird in den meisten Sprachen intern so ein Stack genutzt um
 Parameter zu managen. Hier ein Beispiel einer Addition
 
@@ -471,7 +476,8 @@ Ich dachte ich würde damit auskommen keine spezielle Sprachezu benutzen und sta
 
 Denken wir uns dch mal folgenden Code
 
-```scheme
+
+
 ((define test-west
                                             
 (lambda (x)                                             
@@ -484,12 +490,18 @@ Denken wir uns dch mal folgenden Code
 (add 5 (app-fun test-west u))
                                                              
 ))
+
                                           
 (app-fun higher 10)
                                           
 (app-fun higher 7)
                                           
 )))
+
+```
+
+
+A-1-1: Beschreibung der Funktionen und wo sie aufgerufen werden
 
 
 
@@ -502,8 +514,7 @@ Wir haben auch hier wieder eine Abstraktion (Higher Order) -> Bescghreibung der 
 Hier ist das zum einen
 
 
-
-
+```scheme
 ((define test-west
                                             
 (lambda (x)                                             
@@ -514,11 +525,15 @@ und zum Anderen
 
 
  
+
+
 (define higher 
 (lambda (u)                                                             
 (add 5 (app-fun test-west u))
                                                              
 ))
+ 
+```
 
 
 Das 'higher' ruft hier 'test-west' auf -> das geschieht in der Zeile 
@@ -548,8 +563,10 @@ nun kommt dieser Aufruf als erstes:
 
 - Nun kommt der lecker Nachtisch:
 
-erstellen wir doch als Hausafgabe diese Punkte für :
+A-10 : erstellen wir doch als Hausafgabe diese Punkte für :
 
+
+```scheme
 (lambda (x) 
 
 	(lambda (y)  
@@ -558,9 +575,18 @@ erstellen wir doch als Hausafgabe diese Punkte für :
 		12) 
 			3) 
 				7)))
+```
 
 
-Ich hoffe das hat funktioniert ;-)			
+A-10-1: Beschreibung der Funktionen und wo sie aufgerufen werden
+
+A-10-2: Beschreibung der Steps die ablaufen um das Ganze korrekt auszuführen 
+
+A-10-3: Graphische Darstellung der Entwicklung von SECD, Dump, Stack und Umgebung
+
+
+
+Ich hoffe das hat funktioniert ;-)	
 
 
                                                 
