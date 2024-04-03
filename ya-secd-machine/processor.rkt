@@ -197,57 +197,10 @@
                                   
                                
 
-                             ((app-fun? (first code)) ;; correct this by retrieve closure from stack
-                              (begin
-                                    (debug-to-print-secd state "cal in app fun")
-                                (write-newline)
-                                (write-string "try to get from env: ")
-                                (debug-to-print-app-fun (first code) "app-fun case")
-                                (write-string (symbol->string (app-fun-variable (first code))))
-                                (write-newline)
-                                (let* ([the-abst-code  (lookup-environment
-                                                       env
-                                                        dump
-                                                        (app-fun-variable (first code)))]
-                                       [the-closure  (make-closure
-                                                      (abst-variable (first  the-abst-code))
-                                                       (abst-code (first  the-abst-code))                                                                
-                                                      env)]
-                                       )
-                               
-                                  (begin
-                                    (debug-to-print-cl  the-closure "app-fun case")
-                                    (write-newline)
-                                    (write-string "after lookup:  ")
-                                    (if (empty? the-closure)
-                                        (write-string "no binding found")
-                                        (write-string "binding found!!!!") 
-                                     
-                                        )
-                                    (write-newline)
-                                    (let* ([parameter-binding  (op-stack 'pop!)]
-                                           [parm-name (if (abst? (first the-abst-code))
-                                                          (abst-variable (first the-abst-code))
-                                                          'unknown)]
-                                           [extended-env  (extend-environment
-                                                           (closure-environment the-closure)
-                                                           parm-name                                                          
-                                                           parameter-binding)])
-                                      (begin
-                                           
-                                        (temp-stack 'clear!)
-                                        (temp-stack 'push!  parameter-binding)
-                                        (write-object-nl "temp stack content")
-                                        (temp-stack 'print-stack)
-                                        (op-stack 'print-stack)
-                                        (make-secd
-                                        op-stack                                            
-                                         extended-env                                                                                                                  
-                                         (closure-code the-closure)
-                                         (cons
-                                          (make-frame op-stack extended-env (rest code))
-                                          dump)
-                                         )))))))
+                             ((app-fun? (first code))                             
+                                (process-fun-app  state (first code)
+                                )
+                                )
                              
                              ((ap? (first code))
                               (let ([parameter-binding (op-stack 'pop!)]
@@ -352,7 +305,68 @@
                             
                              )
                            
-                           )))          
+                           )))
+
+(define process-fun-app
+  (lambda (secd-state fun-app-rec)
+    (define code (secd-code secd-state))
+     (define env (secd-environment  secd-state))
+     (define op-stack (secd-stack secd-state))
+     (define dump (secd-dump secd-state))
+  (begin
+    (let*  ([inner-code (app-fun-code fun-app-rec)]
+            [bind-var (app-fun-variable fun-app-rec)]
+            [the-abst-code  (lookup-environment
+                                                       env
+                                                        dump
+                                                        bind-var)]
+             [the-closure  (make-closure
+                                                      (abst-variable (first  the-abst-code))
+                                                       (abst-code (first  the-abst-code))                                                                
+                                                      env)]                           
+             [call-state (make-secd op-stack env inner-code dump)]
+             [new-state (really-process call-state)]
+            
+            )
+           (begin
+                                    (debug-to-print-cl  the-closure "app-fun case")
+                                    (write-newline)
+                                    (write-string "after lookup:  ")
+                                    (if (empty? the-closure)
+                                        (write-string "no binding found")
+                                        (write-string "binding found!!!!") 
+                                     
+                                        )
+                                    (write-newline)
+                                    (let* ([parameter-binding  (op-stack 'pop!)]
+                                           [parm-name (if (abst? (first the-abst-code))
+                                                          (abst-variable (first the-abst-code))
+                                                          'unknown)]
+                                           [extended-env  (extend-environment
+                                                           (closure-environment the-closure)
+                                                           parm-name                                                          
+                                                           parameter-binding)])
+                                      (begin
+                                           
+                                        (temp-stack 'clear!)
+                                        (temp-stack 'push!  parameter-binding)
+                                        (write-object-nl "temp stack content")
+                                        (temp-stack 'print-stack)
+                                        (op-stack 'print-stack)
+                                        (make-secd
+                                        op-stack                                            
+                                         extended-env                                                                                                                  
+                                         (closure-code the-closure)
+                                         (cons
+                                          (make-frame op-stack extended-env (rest code))
+                                          dump)
+      )
+                                
+                               
+                             
+                                         )))))))
+    
+    
                    
 
 (define eval-secd (lambda (ast)
@@ -369,13 +383,13 @@
 
 ;;(check-expect (eval-secd (compile-secd '((lambda (x) (mul 5 x)) 2))) 10)
 ;; this tiny scheme code is the level for the next step
-#;(check-expect  (eval-secd  (compile-secd'((define test-west
+(check-expect  (eval-secd  (compile-secd'((define test-west
                                             (lambda (x)                                             
                                               (mul x 9)))
                                           (define higher (lambda (u)
                                                            (add 5 (app-fun test-west u))
                                                            ))
-                                          (app-fun higher 10)))) 42) ;
+                                          (app-fun higher 10)))) 95) ;
 (check-expect  (eval-secd   (compile-secd'((define test-west
                                             (lambda (x)                                             
                                               (mul x 9) ))
@@ -384,7 +398,7 @@
                                                              ))
                                           (app-fun higher 10)
                                           (app-fun higher 7)
-                                          ))) 42) ;
+                                          ))) 68) ;
 #;(check-expect  (eval-secd  (compile-secd'((define test-west
                                               (lambda (x)
                                                 (lambda (y)

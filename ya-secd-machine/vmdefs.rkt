@@ -104,6 +104,7 @@
          app-fun?
          make-app-fun
          app-fun-variable
+         app-fun-code
          var-symbol?
          stop
          make-stop
@@ -285,7 +286,8 @@
 ; - Stelligkeit
 (define-record app-fun
   make-app-fun app-fun?
-  (app-fun-variable var-symbol))
+  (app-fun-variable var-symbol)
+  (app-fun-code machine-code))
 
   
 
