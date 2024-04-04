@@ -31,6 +31,7 @@
          make-frame
          frame?
          frame-stack
+         frame-fun-stack 
          frame-environment
          frame-code
          term
@@ -40,6 +41,7 @@
          secd
          make-secd
          secd-stack
+         secd-fun-stack
          secd-environment
          secd-code
          secd-dump
@@ -110,7 +112,12 @@
          make-stop
          stop?
          the-stop?
-      
+         stack-element
+         make-stack-element
+         stack-element?
+         stack-element-type
+         stack-element-value
+         new-stack-element
          )
 
 ;;Hier der "Prozessor" Befehlssatz
@@ -234,7 +241,10 @@
   (binding-value var-value))
 
 
-
+(define-record stack-element
+  make-stack-element stack-element?
+   (stack-element-type var-symbol)
+  (stack-element-value var-value))
 ; Ein Frame besteht aus:
 ; - Stack
 ; - Umgebung
@@ -242,6 +252,7 @@
 (define-record frame
   make-frame frame?
   (frame-stack stack)
+  (frame-fun-stack stack)
   (frame-environment environment)
   (frame-code machine-code))
 
@@ -265,6 +276,7 @@
 (define-record secd
   make-secd secd?
   (secd-stack stack)
+  (secd-fun-stack stack)
   (secd-environment environment)
   (secd-code machine-code)
   (secd-dump dump))
@@ -454,6 +466,11 @@
   (ast-env  environment)
   (ast-dump dump)
   )
+
+(define new-stack-element
+  (lambda (type val)
+    (make-stack-element type val)
+    ))
 
 
 (: the-empty-environment environment)

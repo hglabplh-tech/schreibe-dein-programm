@@ -14,6 +14,17 @@
 
           ((empty?) (null? stk))
 
+          ((swap-last!)
+           (let ([first (car stk)]
+                 [dummy (set! stk (cdr stk))]
+                 [second (car stk)]
+                  [dummy2 (set! stk (cdr stk))])
+             (begin
+             (print first)
+             (print second )
+             (set! stk (append (list second first) stk) )
+              )))
+
           ;; The push! message should be accompanied by an extra
           ;; argument -- the value to be pushed onto the stack.  This
           ;; value is simply added to the front of the list in the
@@ -96,6 +107,7 @@
 
           ))))
 
+
 (let ([the-stack (make-stack (list))]
       [stack-two (make-stack (list))])
   (the-stack 'push! 8)
@@ -120,6 +132,9 @@
      (new-stack 'push-swapped! 'E)
     (new-stack 'push-swapped! 'F)
     (new-stack 'print-stack)
+    (new-stack 'swap-last!)
+    (new-stack 'print-stack)
+    
   ))
     
  

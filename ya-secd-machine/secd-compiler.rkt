@@ -226,6 +226,7 @@
 (define inject-secd
   (lambda (term)
     (make-secd empty
+               empty
                the-empty-environment          
                        (append
         (append-lists
