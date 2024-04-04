@@ -1,9 +1,9 @@
 #lang deinprogramm/sdp/advanced
 (require ;;lang/htdp-advanced
-  "vmdefs.rkt"
+  "secd-vm-defs.rkt"
   "stack.rkt"
   "operations.rkt"
-  "debug-out.rkt"
+ "debug-out.rkt"
   (only-in     racket
                 set!
                 [set! set-it!]))
@@ -219,22 +219,11 @@
                    ( term->machine-code/t))
     ))
 
+
 ;; process input
 ; Aus Term SECD-Anfangszustand machen
 (: inject-secd (term -> secd))
 (define inject-secd
-  (lambda (term)
-    (make-secd empty
-               the-empty-environment          
-                                  (append
-                      (term->machine-code/t (first term))
-                     (append (term->machine-code/t (rest term))))
-               empty)))
-
-;; process input
-; Aus Term SECD-Anfangszustand machen
-(: inject-secd-new (term -> secd))
-(define inject-secd-new
   (lambda (term)
     (make-secd empty
                the-empty-environment          
@@ -255,7 +244,7 @@
 (define compile-secd
   (lambda (term)    
     (define value 
-      (inject-secd-new term))
+      (inject-secd term))
     
    
     (begin
@@ -284,7 +273,7 @@
                                                   (mul y ((test-add3 y) 9)))))) 8)
 
 ;; hier mussnoch ((fun arg) arg2)  abgedeckt werden
-#;(check-expect (compile-secd'((define test-west
+(check-expect (compile-secd'((define test-west
                                            (lambda (x)
                                              (lambda (y)
                                              (mul x y))))
@@ -292,8 +281,8 @@
                                                           (lambda ()
                                                           (add 5 ((app-fun test-west u) 6))
                                                             )))
-                                         (app-fun higher 10))) 42) ;; replace 42 the number of wisdom
-(check-expect  (compile-secd'((define test-west
+                                         ((app-fun higher 10)))) 42) ;; replace 42 the number of wisdom
+#;(check-expect  (compile-secd'((define test-west
                                             (lambda (x)                                             
                                               (mul x 9) ))
                                           (define higher (lambda (u)
@@ -303,7 +292,7 @@
                                           (app-fun higher 7) 
                                           )) 42) ;
 
-(check-expect  (compile-secd'((define test-west
+#;(check-expect  (compile-secd'((define test-west
                                             (lambda (x)                                             
                                               (mul x 9) ))
                                           (define higher (lambda (u)

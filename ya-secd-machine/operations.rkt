@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "vmdefs.rkt"
+(require "secd-vm-defs.rkt"
          "stack.rkt")
 (provide make-push! make-pop!)
 

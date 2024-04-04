@@ -3,7 +3,7 @@
   (only-in   racket
              print
              [print debug-print])
-  "vmdefs.rkt"
+  "secd-vm-defs.rkt"
   "stack.rkt"
   "operations.rkt")
 

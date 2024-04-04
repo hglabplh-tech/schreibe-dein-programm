@@ -1,7 +1,7 @@
 #lang deinprogramm/sdp/advanced
 (require 
-  "vmdefs.rkt"
-  "vmcore.rkt"
+  "secd-vm-defs.rkt"
+  "secd-compiler.rkt"
   "stack.rkt"
   "operations.rkt"
   "debug-out.rkt")
@@ -389,7 +389,8 @@
                                           (define higher (lambda (u)
                                                            (add 5 (app-fun test-west u))
                                                            ))
-                                          (app-fun higher 10)))) 95) ;
+                                          (app-fun higher 10)))) 95)
+
 (check-expect  (eval-secd   (compile-secd'((define test-west
                                             (lambda (x)                                             
                                               (mul x 9) ))
@@ -398,7 +399,8 @@
                                                              ))
                                           (app-fun higher 10)
                                           (app-fun higher 7)
-                                          ))) 68) ;
+                                          ))) 68)
+
 #;(check-expect  (eval-secd  (compile-secd'((define test-west
                                               (lambda (x)
                                                 (lambda (y)
@@ -407,6 +409,6 @@
                                                              (lambda ()
                                                                (add 5 ((app-fun test-west u) 6))
                                                                )))
-                                            (app-fun higher 10)))) 42) ; wisdom
+                                            ((app-fun higher 10))))) 42) ; wisdom
 ;(check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2))) 6)   
 ;;(check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (div 120 (mul y  (add x y) ) )) 1) 2)))) 20)
