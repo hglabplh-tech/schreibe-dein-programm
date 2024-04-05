@@ -30,6 +30,17 @@
         state
         (secd-step* (really-process state)) ) ))
 
+(define secd-exec-prim
+  (lambda (state)
+    (if  (empty? (secd-code state))             
+        (make-secd
+         ((secd-stack state) 'reverse!)
+                   (secd-fun-stack state)
+                   (secd-environment state)
+                   (secd-code state)
+                   (secd-dump state))
+        (secd-exec-prim (really-process state)) ) ))
+
 
 (define call-abstract-pop! (lambda (term op-stack)
                              (if (abst? (first term))
@@ -144,7 +155,33 @@
                              
                            
                                      
-        
+                             ((where?-? (first code))
+                                 (let ([cond-secd (make-secd
+                                                             op-stack
+                                                             fun-stack
+                                                             env
+                                                            (where?-condition (first code))
+                                                            dump)])
+                                   (begin
+                                   (secd-exec-prim cond-secd)
+                                   (let* ([cond-result (stack-element-value (op-stack 'pop!))]
+                                         [the-code (if  cond-result
+                                               (where?-if-branch (first code))
+                                               (where?-else-branch (first code)))]
+                                         [the-closure   (make-closure 'blubb
+                                                                      the-code
+                                                                      env)])
+                                       (make-secd   op-stack
+                                               (make-stack  (list))                                          
+                                              (closure-environment the-closure)                                                                                  
+                                             (closure-code the-closure)
+                                             (cons
+                                              ;;  (first stack))
+                                              (make-frame op-stack fun-stack env (rest code))
+                                              dump)
+                                             ) ) ))
+                                     )
+                                   
 
                              ((prim? (first code))                    
                               (begin
@@ -183,11 +220,7 @@
                                 (write-string (symbol->string (define-def-bind (first code))))
                                 (write-newline)                               
                                 (let* ([the-binding (define-def-bind (first code))]
-                                       [the-value (define-def-value (first code))]
-                                       [the-value (if (and (cons? the-value) (abst? (first the-value)))
-                                                      (append the-value (list (make-stop)))
-                                                      the-value
-                                                      )]
+                                       [the-value (define-def-value (first code))]                                     
                                        [extended-env (extend-environment
                                                       env
                                                       the-binding                                                          
@@ -367,7 +400,7 @@
 
 ;;(check-expect (eval-secd (compile-secd '((lambda (x) (mul 5 x)) 2))) 10)
 ;; this tiny scheme code is the level for the next step
-(check-expect  (eval-secd  (compile-secd'((define test-west
+#;(check-expect  (eval-secd  (compile-secd'((define test-west
                                             (lambda (x)                                             
                                               (mul x 9)))
                                           (define higher (lambda (u)
@@ -375,7 +408,7 @@
                                                            ))
                                           (app-fun higher 10)))) 95)
 
-(check-expect  (eval-secd   (compile-secd'((define test-west
+#;(check-expect  (eval-secd   (compile-secd'((define test-west
                                             (lambda (x)                                             
                                               (mul x 9) ))
                                           (define higher (lambda (u)
@@ -385,7 +418,7 @@
                                           (app-fun higher 7)
                                           ))) 68)
 
-(check-expect  (eval-secd  (compile-secd'((define test-west
+#;(check-expect  (eval-secd  (compile-secd'((define test-west
                                               (lambda (x)
                                                 (lambda (y)
                                                   (mul x y))))
@@ -393,6 +426,41 @@
                                                              (lambda ()
                                                                (add 5 ((app-fun test-west u) 6))
                                                                )))
-                                            ((app-fun higher 10))))) 65) ; wisdom
+                                            ((app-fun higher 10))))) 65)
+(check-expect (eval-secd (compile-secd'((define test-west
+                               (lambda (x)
+                                 
+                                   (mul x 18)))
+                             (define higher (lambda (u)
+                                              (lambda ()
+                                                (cond-branch (== u 17)
+                                                       (add 5 (app-fun test-west u))
+                                                       (add 5 (app-fun test-west 12)))
+                                                )))
+                             ((app-fun higher 6)))))  221) 
+
+(check-expect (eval-secd (compile-secd'((define test-west
+                               (lambda (x)
+                                 
+                                   (mul x 18)))
+                             (define higher (lambda (u)
+                                              (lambda ()
+                                                (cond-branch (== u 17)
+                                                       (add 5 (app-fun test-west u))
+                                                       (add 5 (app-fun test-west 12)))
+                                                )))
+                             ((app-fun higher 17))))) 311)
+
+(check-expect (eval-secd (compile-secd'((define test-west
+                               (lambda (x)
+                                 
+                                   (mul x 18)))
+                             (define higher (lambda (u)
+                                              (lambda ()
+                                                (cond-branch (< u 17)
+                                                       (add 5 (app-fun test-west u))
+                                                       (add 5 ((higher 10))))
+                                                )))
+                             ((app-fun higher 10))))) 185) 
 ;(check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2))) 6)   
 ;;(check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (div 120 (mul y  (add x y) ) )) 1) 2)))) 20)

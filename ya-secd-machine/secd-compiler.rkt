@@ -3,10 +3,10 @@
   "secd-vm-defs.rkt"
   "stack.rkt"
   "operations.rkt"
- "debug-out.rkt"
+  "debug-out.rkt"
   (only-in     racket
-                set!
-                [set! set-it!]))
+               set!
+               [set! set-it!]))
 ;; defiitions for the machine and the pseudo-code
 (provide compile-secd)
 ; die Elemente einer Liste von Listen aneinanderhängen
@@ -29,26 +29,29 @@
                                (first (rest (rest term))))              
                               )))
       
-((fun-application?  term)
-         (list (make-app-fun (first (rest term))
-                              (term->machine-code
-                               (first (rest (rest term))))              
-                              )))
+      ((fun-application?  term)
+       (list (make-app-fun (first (rest term))
+                           (term->machine-code
+                            (first (rest (rest term))))              
+                           )))
 
+     
+    ((where-condition? term)       
+       (list (make-where?
+                    (term->machine-code
+                     (first (rest term)))
+                    (term->machine-code
+                       (first (rest (rest term))))
+                    (term->machine-code
+                     (first (rest (rest (rest term)))
+                     )))))
 
- 
-          ((the-stop? term)
-               (append    (list (make-stop))
-                (term->machine-code (rest term))                    
-                       ))
-      
-
-       ((var-symbol? term) (list (make-push! (list term) )))
+      ((var-symbol? term) (list (make-push! (list term) )))
        
- ((application? term)
+      ((application? term)
        (let ([result (append (term->machine-code (first term))
-               (append (term->machine-code (smart-first (smart-rest term)))
-                       (list (make-tailap ))))])       
+                             (append (term->machine-code (smart-first (smart-rest term)))
+                                     (list (make-tailap ))))])       
          result))
          
 
@@ -95,30 +98,31 @@
                                (first (rest (rest term))))           
                               )))      
      
-((fun-application?  term)
-         (list (make-app-fun (first (rest term))
-                              (term->machine-code/t
-                               (first (rest (rest term))))              
-                              )))
+      ((fun-application?  term)
+       (list (make-app-fun (first (rest term))
+                           (term->machine-code/t
+                            (first (rest (rest term))))              
+                           )))
          
-       ((the-stop? term)
-               (append    (list (make-stop))
-                (term->machine-code/t-t (rest term))))
 
-
-
-         ((the-stop? term)
-               (append    (list (make-stop))
-                (term->machine-code/t (rest term))                    
-                       ))
+      
+    ((where-condition? term)       
+       (list (make-where?
+                    (term->machine-code/t
+                     (first (rest term)))
+                    (term->machine-code/t
+                       (first (rest (rest term))))
+                    (term->machine-code/t
+                     (first (rest (rest (rest term)))
+                     )))))
        
-        ((var-symbol? term)
+      ((var-symbol? term)
        (list (make-push! (list term) )))
         
-  ((application? term)
+      ((application? term)
        (let ([result (append (term->machine-code/t (first term))
-               (append (term->machine-code/t (smart-first (smart-rest term)))
-                       (list (make-ap ))))])       
+                             (append (term->machine-code/t (smart-first (smart-rest term)))
+                                     (list (make-ap ))))])       
          result))
      
        
@@ -165,23 +169,31 @@
                                (first (rest (rest term))))
                               )))
      
-((fun-application?  term)
-         (list (make-app-fun (first (rest term))
-                              (term->machine-code/t
-                               (first (rest (rest term))))              
-                              )))
+      ((fun-application?  term)
+       (list (make-app-fun (first (rest term))
+                           (term->machine-code/t
+                            (first (rest (rest term))))              
+                           )))
+
+     ((where-condition? term)       
+       (list (make-where?
+                    (term->machine-code/t
+                     (first (rest term)))
+                    (term->machine-code/t
+                       (first (rest (rest term))))
+                    (term->machine-code/t
+                     (first (rest (rest (rest term)))
+                     )))))
          
-       ((the-stop? term)
-               (append    (list (make-stop))
-                (term->machine-code/t-t (rest term))))
+     
       
-       ((var-symbol? term)
+      ((var-symbol? term)
        (list (make-push! (list term) )))
        
-  ((application? term)
+      ((application? term)
        (let ([result (append (term->machine-code/t (first term))
-               (append (term->machine-code/t (smart-first (smart-rest term)))
-                       (list (make-tailap ))))])       
+                             (append (term->machine-code/t (smart-first (smart-rest term)))
+                                     (list (make-tailap ))))])       
          result))
      
        
@@ -228,9 +240,9 @@
     (make-secd empty
                empty
                the-empty-environment          
-                       (append
-        (append-lists
-         (map term->machine-code/t term)))
+               (append
+                (append-lists
+                 (map term->machine-code/t term)))
                empty)))
 
 ; bis zum Ende Zustandsübergänge berechne)
@@ -265,42 +277,55 @@
 
 ;; Ein kleinerAusblick auf die nächste mögliche Funktionalität
 #;(check-expect (compile-secd '(define test-add3 (lambda (x)
-                                                 (lambda (y)
-                                                   (add x y)           
-                                                   )))) 7)
+                                                   (lambda (y)
+                                                     (add x y)           
+                                                     )))) 7)
 
 #;(check-expect (compile-secd '(define mul-add3 (lambda (y)
-                                                (lambda(fun)
-                                                  (mul y ((test-add3 y) 9)))))) 8)
+                                                  (lambda(fun)
+                                                    (mul y ((test-add3 y) 9)))))) 8)
 
 ;; hier mussnoch ((fun arg) arg2)  abgedeckt werden
 (check-expect (compile-secd'((define test-west
-                                           (lambda (x)
-                                             (lambda (y)
-                                             (mul x y))))
-                                         (define higher (lambda (u)
-                                                          (lambda ()
-                                                          (add 5 ((app-fun test-west u) 6))
-                                                            )))
-                                         ((app-fun higher 10)))) 42) ;; replace 42 the number of wisdom
+                               (lambda (x)
+                                 
+                                   (mul x 18)))
+                             (define higher (lambda (u)
+                                              (lambda ()
+                                                (cond-branch (== u 17)
+                                                       (add 5 (app-fun test-west u))
+                                                       (add 5 (app-fun test-west 12)))                                               
+                                                )))
+                             ((app-fun higher 6)))) 42) ;
+
+(check-expect (compile-secd'((define test-west
+                               (lambda (x)                                 
+                                   (mul x 18)))
+                             (define higher (lambda (u)
+                                              (lambda ()
+                                                (cond-branch (< u 17)
+                                                       (add 5 (app-fun test-west u))
+                                                       (add 5 ((higher 10))))
+                                                )))
+                             ((app-fun higher 10)))) 185) 
 #;(check-expect  (compile-secd'((define test-west
-                                            (lambda (x)                                             
-                                              (mul x 9) ))
-                                          (define higher (lambda (u)
-                                                             (add 5 (app-fun test-west u))
-                                                             ))
-                                          (app-fun higher 11)
-                                          (app-fun higher 7) 
-                                          )) 42) ;
+                                  (lambda (x)                                             
+                                    (mul x 9) ))
+                                (define higher (lambda (u)
+                                                 (add 5 (app-fun test-west u))
+                                                 ))
+                                (app-fun higher 11)
+                                (app-fun higher 7) 
+                                )) 42) ;
 
 #;(check-expect  (compile-secd'((define test-west
-                                            (lambda (x)                                             
-                                              (mul x 9) ))
-                                          (define higher (lambda (u)
-                                                             (add 5 (app-fun test-west u))
-                                                             ))
-                                          (app-fun higher 10)
+                                  (lambda (x)                                             
+                                    (mul x 9) ))
+                                (define higher (lambda (u)
+                                                 (add 5 (app-fun test-west u))
+                                                 ))
+                                (app-fun higher 10)
                                          
-                                          )) 42)
+                                )) 42)
 
 #;(check-expect (compile-secd '((lambda (x) (lambda (y) (add x y) 1) 2))) 3)

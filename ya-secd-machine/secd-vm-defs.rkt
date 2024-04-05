@@ -7,6 +7,12 @@
   (only-in      lang/htdp-advanced
                 list?                   
                 [list? list-data?])
+  (only-in      lang/htdp-advanced
+                char?                   
+                [char? char-data?])
+  (only-in      racket
+                byte?                   
+                [byte? byte-data?])
   "stack.rkt")
   
 ;;(list-data? 5)
@@ -107,17 +113,20 @@
          make-app-fun
          app-fun-variable
          app-fun-code
-         var-symbol?
-         stop
-         make-stop
-         stop?
-         the-stop?
+         var-symbol?       
          stack-element
          make-stack-element
          stack-element?
          stack-element-type
          stack-element-value
          new-stack-element
+         where?
+         where-condition?
+         make-where?
+         where?-?
+         where?-condition
+         where?-if-branch
+         where?-else-branch
          )
 
 ;;Hier der "Prozessor" Befehlssatz
@@ -135,7 +144,7 @@
         (equal? 'peek term)
         (equal? 'store term)
         (equal? 'load term)
-        (equal? 'where term))))
+        )))
 
 (define primitive?
   (lambda (term)
@@ -143,13 +152,27 @@
         (equal? 'sub term)
         (equal? 'mul term)
         (equal? 'div term)
-        (equal? 'eq? term))))
+        (condition-primitive? term))))
+       
+
+(: condition-primitive? (any -> boolean))
+(define condition-primitive?
+  (lambda (term)
+    (or (equal? '== term)
+        (equal? '> term)
+        (equal? '< term)
+        (equal? '>= term)
+        (equal? '<= term)
+        (equal? 'true? term)
+        (equal? 'false? term)
+        )
+    ))
 
 (define instruction
   (signature
    (mixed 
     base
-   var-symbol
+    var-symbol
     op
     ap
     tailap
@@ -158,7 +181,7 @@
     define-def
     apply-fun
     abst
-    stop)))
+    where?)))
 
 (define complex-form-instruction
   (signature
@@ -166,7 +189,7 @@
     base
     var-symbol 
     prim
-   stop
+    stop
     )))
 
 ;; here we define the stuff for machine-code; Applikations-Instruktion
@@ -243,7 +266,7 @@
 
 (define-record stack-element
   make-stack-element stack-element?
-   (stack-element-type var-symbol)
+  (stack-element-type var-symbol)
   (stack-element-value var-value))
 ; Ein Frame besteht aus:
 ; - Stack
@@ -301,7 +324,11 @@
   (app-fun-variable var-symbol)
   (app-fun-code machine-code))
 
-  
+(define-record where?
+  make-where? where?-?
+  (where?-condition machine-code) 
+  (where?-if-branch machine-code)
+  (where?-else-branch machine-code))
 
 (define-record complex-form
   make-complex-form complex-form?
@@ -331,6 +358,9 @@
 (define base?
   (lambda (term)
     (or (boolean? term)
+        (char-data?  term)
+        (byte-data?  term)
+        (string? term)
         (number? term))))
         
 
@@ -338,7 +368,7 @@
 (define base (signature (predicate base?)))
 (define term
   (signature
-   (mixed symbol
+   (mixed var-symbol
           application
           abstraction
           primitive-application
@@ -359,8 +389,17 @@
        *)
       ((equal? term  'div )
        /)  
-      ((equal? term 'eq?)
-       equal?))))
+      ((equal? term '==)
+       equal?)
+      ((equal? term '>)
+       >)
+      ((equal? term '<)
+       <)
+      ((equal? term '>=)
+       >=)
+      ((equal? term '<=)
+       <=)
+      )))
 
 (define apply-primitive
   (lambda (primitive args)
@@ -372,9 +411,20 @@
       ((equal? primitive 'eq?)
        (equal? (first args) (first (rest args))))
       ((equal? primitive 'mul)
-     (* (first args) (first (rest args))))
+       (* (first args) (first (rest args))))
       ((equal? primitive 'div)
-       (/ (first args) (first (rest args)))))))
+       (/ (first args) (first (rest args))))
+       ((equal? primitive '==)
+       (equal? (first args) (first (rest args))))
+      ((equal? primitive '>)
+       (> (first args) (first (rest args))))
+      ((equal? primitive '<)
+       (< (first args) (first (rest args))))
+      ((equal? primitive '>=)
+       (>= (first args) (first (rest args))))
+      ((equal? primitive '<=)
+       (<= (first args) (first (rest args))))
+      )))
 
 
 (define primitive (signature (predicate primitive?)))
@@ -448,11 +498,15 @@
          (equal? (first term) 'app-fun)
          )))
 
-(: the-stop? (any -> boolean))
-(define the-stop?
+; Prädikat für where Bedingungen
+(: where-condition? (any -> boolean))
+(define where-condition?
   (lambda (term)
-       (and (cons? term)
-         (equal? (first term) stop))))
+    (and (cons? term) 
+         (equal? (first term) 'cond-branch)
+         )))
+
+
 
 
 
@@ -543,6 +597,7 @@
            (not (equal? token 'lambda))
            (not (equal? token 'app-fun))
            (not (primitive? token))
+           (not (equal? token 'where?))
            (not (equal? token 'stop))
            (not (base? token)) )
       )))
