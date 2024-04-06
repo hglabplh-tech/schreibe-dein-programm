@@ -19,7 +19,7 @@
                          [act-frame (first dump)]
                          [state (make-secd op-stack (make-stack (list)) env code dump)])
                     (begin
-                      (debug-to-print-secd state "debug initialize processing")
+                      
                       (secd-step* state)))))
 
 
@@ -34,7 +34,7 @@
   (lambda (state)
     (if  (empty? (secd-code state))             
         (make-secd
-         ((secd-stack state) 'reverse!)
+                  (secd-stack state)
                    (secd-fun-stack state)
                    (secd-environment state)
                    (secd-code state)
@@ -58,29 +58,30 @@
                          (define dump (secd-dump state))
                          (begin
                            (if (not (empty? code))
-                         ;;  (debug-to-print-secd state "debug enter processing")
+                      
                            (cond                         
                              ((abst? (first code))
                               (begin
-                                    (debug-to-print-secd state "call in absttraction")
-                                (let ([the-closure  (make-closure
-                                                     (abst-variable (first code))
+                                     (print-stack-env-code op-stack fun-stack env code  "debug call abstraction")
+                                (let* ([param-var  (abst-variable (first code))]
+                                      
+                                              
+                                      [the-closure  (make-closure
+                                                     param-var
                                                      (abst-code (first code))                                                                           
                                                      env)])
                                   (begin
+                                    (write-object-nl param-var)
                                     (write-string "there is NO closure ON stack.....")
-                                
+                                    (op-stack 'push!  (make-stack-element 'param param-var))
                                     (write-string "push closure") 
                                     (fun-stack 'push! the-closure)
                                     (fun-stack 'print-stack)
                                     (write-object-nl "temp stack content")
                                     (temp-stack 'print-stack)                                  
-                                    (cond
-                                      ((equal? (temp-stack 'size) 1)
-                                       (begin
-                                         (write-object-nl "push the value")
+                            
                                          
-                                         (op-stack 'push! (temp-stack 'pop!)))))
+                                        
                                     (write-object-nl "temp stack content")
                                     (temp-stack 'print-stack)
                                     (op-stack 'print-stack)
@@ -97,7 +98,7 @@
                         
                              ((op?  (first code))                     
                               (let ([val (first (op-params (first code)))])
-                                (begin
+                               (begin
                                   (cond ((base? val)
                                          (begin (write-newline)(write-string "get constant")
                                                 (write-newline)
@@ -121,16 +122,22 @@
                                                                 env
                                                                 dump
                                                                 val)])
-                                             (begin
-                                               (write-string (number->string bound-value))
+                                          
+                                               (cond
+                                                 ((number? bound-value)
+                                                     (begin
+                                                     (write-string (number->string bound-value))
                                                ((op-operation (first code))  op-stack  (new-stack-element 'app
                                                                                               bound-value))
-                                               ;;(op-stack 'push!  bound-value))
-                                               )
+                                                 )))
+                                             
+                                                 
+                                                   
+                                                  
                                         
                                              ;; TODO: handle stack in the right way
                               
-                                             ))) )
+                                        )) ))
                                    
                                   (make-secd
                                    op-stack
@@ -156,23 +163,39 @@
                            
                                      
                              ((where?-? (first code))
-                                 (let ([cond-secd (make-secd
-                                                             op-stack
+                                 (let*  (
+
+                                         [fresh-stack (make-stack (list))]
+                                         [dummy    ( cond
+                                           ((> (op-stack 'size) 0)
+                                               (fresh-stack 'push! (op-stack 'peekit))
+                                            )
+                                           (else (make-stack (list)))
+                                           )]
+                                         [cond-secd (make-secd
+                                                             fresh-stack
                                                              fun-stack
                                                              env
                                                             (where?-condition (first code))
                                                             dump)])
                                    (begin
-                                   (secd-exec-prim cond-secd)
-                                   (let* ([cond-result (stack-element-value (op-stack 'pop!))]
+                                  
+                                   (let* ([res-secd  (secd-exec-prim cond-secd)]
+                                          [res-op-stack (secd-stack res-secd)]
+                                          [res-fun-stack (secd-fun-stack res-secd)]
+                                          [res-env (secd-environment res-secd)]
+                                           [res-dump (secd-dump res-secd)]                                  
+                                           [dummy (op-stack 'push! (res-op-stack 'peekit))]
+                                          [cond-result (stack-element-value (op-stack 'pop!))]
                                          [the-code (if  cond-result
                                                (where?-if-branch (first code))
                                                (where?-else-branch (first code)))]
                                          [the-closure   (make-closure 'blubb
                                                                       the-code
                                                                       env)])
-                                       (make-secd   op-stack
-                                               (make-stack  (list))                                          
+                                     
+                                       (make-secd  op-stack
+                                                    fun-stack
                                               (closure-environment the-closure)                                                                                  
                                              (closure-code the-closure)
                                              (cons
@@ -185,22 +208,15 @@
 
                              ((prim? (first code))                    
                               (begin
-                              
-                                (write-newline)
-                                (write-string "enter calculation")
-                                (write-newline)
-                                (temp-stack 'push! (op-stack 'pop!))
-                                (temp-stack 'push! (op-stack 'pop!))
-                                (write-newline)
-                                (write-string (symbol->string  (prim-operator (first code))))
-                                (write-newline)
-                                                     
-                                ;;(op-stack 'push! 
-                                ;((pcode->fun  (prim-operator (first code)))
+                                (print-stack-env-code op-stack fun-stack env (rest code) "prim? enter op stack--> ")                           
+                                 (write-object-nl (prim-operator (first code)))
+                                 (let ([second-element  (stack-element-value (op-stack 'pop!))]
+                                       [first-element (stack-element-value (op-stack 'pop!))])                                   
                                 (op-stack 'push! (new-stack-element 'app
                                           (apply-primitive (prim-operator (first code))
-                                                           (list (stack-element-value  (temp-stack 'pop!))                         
-                                                                 (stack-element-value  (temp-stack 'pop!))))))
+                                                          (list first-element                        
+                                                                 second-element))))
+                                   )
 
                                 (let ([secd-ret  (make-secd
                                  op-stack
@@ -209,7 +225,7 @@
                                  (rest code)
                                  dump)])
                                  (begin
-                                    (debug-to-print-secd secd-ret "state given by prim? --> ")
+                                    (print-stack-env-code op-stack fun-stack env (rest code) "state given by prim? --> ")
                                 secd-ret)
                                   )))
 
@@ -231,8 +247,8 @@
                                        fun-stack
                                        extended-env
                                        (rest code)
-                                       dump)
-                                      )))
+                                       dump
+                                  ))))
                                   
                                        
                                   
@@ -250,7 +266,7 @@
                                     
                               
                                 (begin
-                                      (debug-to-print-secd state "debug the ap?")
+                                      (print-stack-env-code op-stack fun-stack env code  "debug the ap?")
                                   (write-object-nl "Enter application ->")
                                   (op-stack 'print-stack)
                               
@@ -263,25 +279,42 @@
                                   (write-string (number->string parameter-binding))
                                   (write-newline)
 
-                                  
-                                  (make-secd   op-stack
-                                               (make-stack  (list))         
-                                             (extend-environment
+                                  (let ([extended-env 
+                                                            (extend-environment
                                               (closure-environment the-closure)
                                               (closure-variable the-closure)
-                                              parameter-binding)                                          
+                                              parameter-binding)
+                                                     ]
+                                        [fresh-stack (make-stack (list))])
+                                    (begin
+                                       ( cond
+                                           ((> (op-stack 'size) 0)
+                                               (fresh-stack 'push! (op-stack 'peekit))
+                                            )
+                                           (else 'do-nothing)
+                                           )
+                                  (make-secd   fresh-stack
+                                               (make-stack  (list))         
+                                              extended-env                                   
                                              (closure-code the-closure)
                                              (cons
                                               ;;  (first stack))
                                               (make-frame op-stack fun-stack env (rest code))
                                               dump)
-                                             ) ) ))
+                                             ) ) ))))
                    
-                             ((tailap? (first code))
-                              (let ([closure (fun-stack 'pop!)]) ;; (define closure (first (rest stack)))
-                                (begin
-                                      (debug-to-print-secd state "debug the tailap?")
-                                (make-secd   op-stack
+                             ((tailap? (first code)) ;; nach stack und environment sehen
+                              (let ([closure (fun-stack 'pop!)]
+                                    [fresh-stack (make-stack (list))]) ;; (define closure (first (rest stack)))
+                                (begin                                  
+                                        (print-stack-env-code op-stack fun-stack env code  "debug the tailap?")
+                                            ( cond
+                                           ((> (op-stack 'size) 0)
+                                               (fresh-stack 'push! (op-stack 'peekit))
+                                            )
+                                           (else 'do-nothing)
+                                           )
+                                (make-secd fresh-stack
                                              fun-stack
                                            (extend-environment
                                             (closure-environment closure)
@@ -306,21 +339,26 @@
                                   (write-object-nl "========END THE FRAME FROM DUMP=====================")
                                   (write-object-nl "=============================== FINISH =====================")
 
-                                  (cond ((and ( >=( ret-stack 'size) 2) (equal? (stack-element-type  (ret-stack 'peekit)
-                                      ) 'param))
-                                      (ret-stack 'swap-last!)
-                                      )
-                                        (else 'nothing)
-                                        )
-                                  (ret-stack 'push!    (op-stack 'pop!))
+                              ;;  (let ([ret-val (op-stack 'peekit)])
+                                ;;  (begin
+                                 ;;(ret-stack 'push!    ret-val)
+                                  
+                                    (begin
+                                      ( cond
+                                           ((> (op-stack 'size) 0)
+                                               (ret-stack 'push! (op-stack 'peekit)
+                                            ))
+                                           (else 'do-nothing)
+                                           )
+                                
                                   (make-secd
-                                   ret-stack
+                                   ret-stack ;; ATTENT
                                    fun-stack
                                    (frame-environment frame)
                                    (frame-code frame)
                                    (rest dump))
                                   ))
-    ))
+    )))
 
 (define process-fun-app
   (lambda (secd-state fun-app-rec)
@@ -345,6 +383,7 @@
             
             )
            (begin
+           
                                     (debug-to-print-cl  the-closure "app-fun case")
                                     (write-newline)
                                     (write-string "after lookup:  ")
@@ -361,21 +400,24 @@
                                            [extended-env  (extend-environment
                                                            (closure-environment the-closure)
                                                            parm-name                                                          
-                                                           parameter-binding)])
+                                                           parameter-binding)]
+                                           [fresh-stack (make-stack (list))])
                                       (begin
-                                           
-                                        (temp-stack 'clear!)
-                                        (temp-stack 'push!  (new-stack-element 'param parameter-binding))
-                                        (write-object-nl "temp stack content")
-                                        (temp-stack 'print-stack)
                                         (op-stack 'print-stack)
+
+                                        ( cond
+                                           ((> (op-stack 'size) 0)
+                                               (fresh-stack 'push! (op-stack 'peekit)))
+                                            
+                                           (else  'nothing))
+                                     
                                         (make-secd
-                                        op-stack
-                                        fun-stack
-                                         extended-env                                                                                                                  
+                                        fresh-stack 
+                                        (make-stack (list))
+                                        extended-env                                                                                                          
                                          (closure-code the-closure)
                                          (cons
-                                          (make-frame op-stack fun-stack extended-env (rest code))
+                                          (make-frame op-stack fun-stack env (rest code))
                                           dump)
       )
                                 
@@ -400,15 +442,15 @@
 
 ;;(check-expect (eval-secd (compile-secd '((lambda (x) (mul 5 x)) 2))) 10)
 ;; this tiny scheme code is the level for the next step
-#;(check-expect  (eval-secd  (compile-secd'((define test-west
+(check-expect  (eval-secd  (compile-secd '((define test-west
                                             (lambda (x)                                             
                                               (mul x 9)))
                                           (define higher (lambda (u)
                                                            (add 5 (app-fun test-west u))
                                                            ))
-                                          (app-fun higher 10)))) 95)
+                                          (app-fun higher 7))))  68)
 
-#;(check-expect  (eval-secd   (compile-secd'((define test-west
+(check-expect  (eval-secd   (compile-secd'((define test-west
                                             (lambda (x)                                             
                                               (mul x 9) ))
                                           (define higher (lambda (u)
@@ -418,40 +460,41 @@
                                           (app-fun higher 7)
                                           ))) 68)
 
-#;(check-expect  (eval-secd  (compile-secd'((define test-west
+(check-expect  (eval-secd  (compile-secd'((define test-west
                                               (lambda (x)
                                                 (lambda (y)
                                                   (mul x y))))
                                             (define higher (lambda (u)
-                                                             (lambda ()
-                                                               (add 5 ((app-fun test-west u) 6))
+                                                             (lambda (x-x-x)
+                                                               (add ((app-fun test-west u) 6) 5)
                                                                )))
-                                            ((app-fun higher 10))))) 65)
-(check-expect (eval-secd (compile-secd'((define test-west
-                               (lambda (x)
-                                 
-                                   (mul x 18)))
-                             (define higher (lambda (u)
-                                              (lambda ()
-                                                (cond-branch (== u 17)
-                                                       (add 5 (app-fun test-west u))
-                                                       (add 5 (app-fun test-west 12)))
-                                                )))
-                             ((app-fun higher 6)))))  221) 
+                                            ((app-fun higher 10) 0)))) 65)
 
 (check-expect (eval-secd (compile-secd'((define test-west
                                (lambda (x)
                                  
                                    (mul x 18)))
                              (define higher (lambda (u)
-                                              (lambda ()
+                                              (lambda ((x-x-x))
                                                 (cond-branch (== u 17)
                                                        (add 5 (app-fun test-west u))
                                                        (add 5 (app-fun test-west 12)))
                                                 )))
-                             ((app-fun higher 17))))) 311)
+                             ((app-fun higher 6) 0))))  221)
 
 (check-expect (eval-secd (compile-secd'((define test-west
+                               (lambda (x)
+                                 
+                                   (mul x 18)))
+                             (define higher (lambda (u)
+                                              (lambda ((x-x-x))
+                                                (cond-branch (== u 17)
+                                                       (add 5 (app-fun test-west u))
+                                                       (add 5 (app-fun test-west 12)))
+                                                )))
+                             ((app-fun higher 17) 0)))) 311)
+
+#;(check-expect (eval-secd (compile-secd'((define test-west
                                (lambda (x)
                                  
                                    (mul x 18)))
@@ -461,6 +504,68 @@
                                                        (add 5 (app-fun test-west u))
                                                        (add 5 ((higher 10))))
                                                 )))
-                             ((app-fun higher 10))))) 185) 
+                             ((app-fun higher 10))))) 185)
+
+#;(check-expect (eval-secd (compile-secd'((define test-west
+                               (lambda (x)
+                                 
+                                   (mul x 18)))
+                             (define higher (lambda (u)
+                                              (lambda ()
+                                                (cond-branch (< u 9)
+                                                       (mul 5 (add 7 u))
+                                                       (add 5 ((higher u))))
+                                                )))
+                             ((app-fun higher 10))))) 185)
+
+(check-expect (eval-secd (compile-secd'((define test-west
+                               (lambda (x)
+                                 
+                                   (mul x 18)))
+                             (define higher (lambda (x)
+                                             
+                                                (cond-branch (< x 11)
+                                                       (mul 5 (add 7 x))
+                                                       (add 5 (app-fun higher 10))
+                                                )))
+                             (app-fun higher 15))))  90)
 ;(check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2))) 6)   
 ;;(check-expect (eval-secd(compile-secd '(((lambda (x) (lambda (y) (div 120 (mul y  (add x y) ) )) 1) 2)))) 20)
+
+
+
+  ;; Ultimativer Test
+
+(check-expect (eval-secd (compile-secd
+                           '((define calc-base
+                                             (lambda (x)
+                                               (mul x (div (app-fun higher 5) 2))
+                                               ))
+                                        (define test-west
+                               (lambda (t)
+                                 (cond-branch (< t 9)
+                                   (mul t 18)
+                                  (add 2 (app-fun calc-base 3)))))
+                             (define higher (lambda (u)
+                                              
+                                                (cond-branch (< u 9)
+                                                       (mul 5 (add 7 u))
+                                                       (add (app-fun test-west u) (app-fun higher 7)))
+                                                ))
+                             (app-fun higher 10)))) 162)
+
+;; Verschachteltes where
+
+#;(check-expect (eval-secd
+ (compile-secd'((define higher (lambda (x)
+                                              (lambda ()
+                                                (cond-branch (< x 11)
+                                                       (mul 5 (add 7 x))
+                                                       (cond-branch (> x 20)
+                                                       (add 5 (mul 9 x))
+                                                       (add x x))
+                                                ))))
+                             ((app-fun higher 10))
+                              ((app-fun higher 19))
+                             ((app-fun higher 22))
+                             ) )) 203)

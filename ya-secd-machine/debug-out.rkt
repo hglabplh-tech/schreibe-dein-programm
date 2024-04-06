@@ -17,36 +17,37 @@
  debug-to-print-abst
  write-object-nl
  debug-to-print-secd
+ print-stack-env-code
  )
 
 (define debug-snap-stack
   (lambda (op-stack   message)
     (begin
       (write-object-nl message)
-    (op-stack 'print-stack)
-    )))
+      (op-stack 'print-stack)
+      )))
 
 (define debug-snap-env
   (lambda (act-env message)
     (begin
-        (write-object-nl message)
+      (write-object-nl message)
       (write-newline)          
       (debug-print "------ Begin Actual Env --------------")
       (write-newline)
       (if (not (empty? act-env))      
-      (for-each (lambda (bind)
-                  (begin
-                    (write-newline)
-                    (debug-print "------ Begin Binding --------------")
-                    (write-newline)
-                    (debug-print (binding-variable bind))
-                    (write-newline)
-                    (debug-print (binding-value bind))
-                    (write-newline)
-                    (debug-print "------ End Binding --------------")
-                    (write-newline)))
+          (for-each (lambda (bind)
+                      (begin
+                        (write-newline)
+                        (debug-print "------ Begin Binding --------------")
+                        (write-newline)
+                        (debug-print (binding-variable bind))
+                        (write-newline)
+                        (debug-print (binding-value bind))
+                        (write-newline)
+                        (debug-print "------ End Binding --------------")
+                        (write-newline)))
                     act-env)
-      (write-newline))
+          (write-newline))
       (debug-print "------ End Actual Env --------------")
       (write-newline)
       )))
@@ -75,11 +76,11 @@
     (begin
       (write-object-nl message)
       (if (not (empty? dump))      
-    (for-each (lambda (frame)
-                (debug-snap-frame frame message))
-              dump)
-    (write-newline)
-    ))))
+          (for-each (lambda (frame)
+                      (debug-snap-frame frame message))
+                    dump)
+          (write-newline)
+          ))))
 
 (define debug-to-print-cl
   (lambda (cl message)    
@@ -128,11 +129,21 @@
     (begin
       (write-object-nl message)
       (write-object-nl  "------------ Begin SECD --------------------")
+      (write-object-nl  "------------ Begin SECD OP STACK  --------------------")
       (debug-snap-stack (secd-stack secd-rec) message)
+      (write-object-nl  "------------ End SECD OP STACK  --------------------")
+
+      (write-object-nl  "------------ Begin SECD FUN STACK  --------------------")
+      (debug-snap-stack (secd-fun-stack secd-rec) message)
+      (write-object-nl  "------------ End SECD FUN STACK  --------------------")
+    
+      (debug-snap-stack (secd-stack secd-rec) message)
+      (write-object-nl  "------------ Begin SECD ENV --------------------")
       (debug-snap-env (secd-environment secd-rec) message)
-       (write-object-nl  "------------ Begin SECD  CODE--------------------")
+      (write-object-nl  "------------ End SECD ENV --------------------")
+      (write-object-nl  "------------ Begin SECD  CODE--------------------")
       (debug-print (secd-code secd-rec))
-       (write-object-nl  "------------ End SECD CODE--------------------")
+      (write-object-nl  "------------ End SECD CODE--------------------")
       (debug-snap-dump (secd-dump secd-rec) message)
       (write-object-nl  "------------ End SECD --------------------"))))
 
@@ -142,4 +153,24 @@
       (write-newline)
       (debug-print message)
       (write-newline)
+      )))
+
+(define print-stack-env-code
+  (lambda (op-stack fun-stack env code message)
+    (begin
+     (write-object-nl  "------------ Begin ACT OP STACK  --------------------")
+      (debug-snap-stack op-stack message)
+      (write-object-nl  "------------ End ACT OP STACK  --------------------")
+
+      (write-object-nl  "------------ Begin ACT FUN STACK  --------------------")
+      (debug-snap-stack fun-stack message)
+      (write-object-nl  "------------ End ACT FUN STACK  --------------------")
+      
+         (write-object-nl  "------------ Begin ACT ENV --------------------")
+      (debug-snap-env env message)
+      (write-object-nl  "------------ End ACT ENV --------------------")
+
+           (write-object-nl  "------------ Begin ACT CODE --------------------")
+      (write-object-nl  code)
+      (write-object-nl  "------------ End ACT CODE --------------------")
       )))

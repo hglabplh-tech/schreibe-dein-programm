@@ -403,6 +403,8 @@
 
 (define apply-primitive
   (lambda (primitive args)
+    (begin
+ 
     (cond
       ((equal? primitive  'add)
        (+ (first args) (first (rest args))))
@@ -424,7 +426,7 @@
        (>= (first args) (first (rest args))))
       ((equal? primitive '<=)
        (<= (first args) (first (rest args))))
-      )))
+      ))))
 
 
 (define primitive (signature (predicate primitive?)))
@@ -536,6 +538,7 @@
 (define  extend-environment
   (lambda (env var-symbol var-value)   
     (cons (make-binding var-symbol var-value)
+          
           (remove-environment-binding env var-symbol)  )))
 
 (: remove-environment-binding (environment symbol -> environment))
@@ -570,13 +573,12 @@
 
 (define env-lookup-helper (lambda (dump variable)
                             (let* ([env (frame-environment (first dump))]
-                                   [binding (lookup-act-environment env variable)])
-                              (if (empty? binding)
+                                   [binding (lookup-act-environment env variable)])                            
                                   (if (empty? dump)
+                                      binding
                                       (env-lookup-helper (rest dump) variable)
-                                      binding)
-                                  binding
-                                  ))))
+                                      )                            
+                                  )))
 
 (define make-empty-frame
   (lambda ()
