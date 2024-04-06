@@ -1,5 +1,9 @@
 # Ein anderer Weg die SECD Maschine den SECD Compiler zu erklären:
 
+## Ein kleines Vorwort
+
+
+
 ## Was diese Abhandlung voraussetzt:
 - Kenntnisse der Abläufe in funktionalen Sprachen oder Sprachelementen
 - Grundkenntnisse über den Aufbau von Maschinen (Wie tickt z.B. ein PC was ist nötig dass er nützlich ist)
@@ -21,20 +25,13 @@ Kern der Logik klarer sichtbar ist.
 
 ## Ein wenig Historie:
 
-Wir schreiben die Jahre 1960 -1970 die Informationstechnologie getrieben durch mathematische Theorien
-unendliche Schwierigkeiten die es zu umschiffen gilt.
 
-Nein sorry falscher Text zu viel "Star Trek" ;-)
-
-
-Ein paar Worte:
-
-Jetzt mal im Ernst es gab in dieser Zeit einige Vordenker die Logik für Probleme entwickelten die mit der damaligen
-Hardware noch weit in den Sternen standen. Heute oh Wunder sind es genau diese Theorien die
-uns das Leben leichter machen.
+In fden 60er Jahren gab es in der Informatik /Mathematik einige Vordenker die Logik für Probleme entwickelten die mit der damaligen
+Hardware noch weit in den Sternen standen. Heute sind es genau diese Theorien und praktischen Ansätze (Prototyp Implementierungen) die
+Lösungen gebracht haben welche sogar oft fast 1:1 in Sprachen und Systemen umgesetzt sind. 
 So ähnlich ist es auch mit der SECD Maschine und dem damit eng verbunden Lambda Kalkül und der
 damit verbundenen Logik die sich mit dem Daten Konstrukt Stack (Stapel oder Haufen) darstellen lässt.
-So #gibt es zum einen "Prozessoren" die mit Registern , Save Areas ... arbeiten und dann "Prozessoren / Maschinen (heute unter anderem unter dem Namen
+So gibt es zum einen "Prozessoren" die mit Registern , Save Areas ... arbeiten und dann "Prozessoren / Maschinen (heute unter anderem unter dem Namen
 VM (Virtual Machine) geläufig" die mit reinen Stack Operationen die Logik eines Programms aufbauen und intern betreiben.
 
 Zurück in die 60er :
