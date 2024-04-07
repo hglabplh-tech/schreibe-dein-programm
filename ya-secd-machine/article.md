@@ -587,6 +587,76 @@ Ich hoffe das hat funktioniert ;-)
 
 
                                                 
+#### Konditionen, Bedingungen, Konditionale Verzweigung (conditional branch)
+
+Ohne Konditionale Verzweigung hätten wir ein heftiges Problem.
+Wir könnten nur eine Liste von Logik ausführen ohne verzweigen zu können. 
+Wir könnten keine bedingte Rekursion verwirklichen.
+Und vieles mehr. Nun kommen wir dazu wie soetwas aussehen könnte
+
+Zunächst müssen wir eine Bedingung darstellen:
+
+In der SECD können wir das wie folgt machen:
+
+Zunächst müssen wir natürlich neben Operatoren wie +,*,-,/, mod
+Vergleichsoperatoren definieren
+Diese könnten wie folgt aussehen
+== für ist gleich
+>= für größer / gleich
+<= für kleiner / gleich
+> für größer
+< für kleiner
+und viele mehr der Phantasie sind keine Grenzen gesetzt
+
+Des weiteren kann man auch eine Funktion schreiben die TRUE / FALSE zurückgibt
+
+Ok das hätten wir mal...
+
+Boolean Datentypen können hier natürlich optimal angewendet werden
+
+Nun wie können wir das z.B. intern darstellen:
+
+ 
+Rufen wir uns dazu nochmal die Definition einer Closure ins Gedächtnis:
+
+| Element der Closure  | Beschreibung                                    |
+|:---------------------|:------------------------------------------------|
+| closure-variable     | Der Parameter der Funktion                      |
+| closure-code         | Der auszuführende Code (+ x 3)                  |
+| closure-environment  | Die Umgebung in der x = 6 festgehalten wird     |
+| closure?             | Hier wieder ein Prädikat um Closure zu erkennen |
+| make-closure         | Wie schon bei Binding ein Konstruktor.          |
+
+Und dann bräuchten wir noch eine interne Darstellung der Verzweigung die wie folgt aussehen könnte 
+
+
+
+| Element des "Bedingungskonstrukts"  | Beschreibung                                          |
+|:------------------------------------|:------------------------------------------------------|
+| where?-condition                    | Die Bedingung als Maschinencode                       |
+| where?-if-branch                    | Der Code für die positive Verzweigung                 |
+| where?-else-branch                  | Der Code für den Zweig was ist wenn es nicht zutrifft |
+| where?-?                            | Das Prädikat zur Identifizierung                      |
+| make-where?                         | Der Konstruktor                                       |
+
+Die Bedingung ist als "Maschinen"-Code definiert wir steuern die Loop der Maschine an um die Bedingungsabfrage auszuführen und zwar als Primitive Operation wie ein '+' 
+Das Ergebnis liegt hier ebenfalls auf dem Stack. Nun ordnen wir je nachdem wie die Prüfung 
+lief den If oder Else Zweig zu und führenn den Code aus.  
+
+Hier hilft unds wieder das Konstrukt der Closure.
+
+1. Wir nehmen den Code der zugeordnet würde aus dem Rekord
+2. Wir definieren einen Closure Record (der wie oben aussehen könnte)
+3. Wir füllen das Closure Code Element mit unserem entnommenen Code
+4. Wir weisen Environment und Stack zu um diese zu verwenden
+5. Wir führen dieses Stück Code aus als hätten wir eine "Higher Order Funktion" auszuführen
+6. Wir kehren eben auf dem selben Weg wieder zurück wie bei einer Funktion auch und setzen die Ausführung nach unserem Konstrukt fort 
+
+Und nun haben wir erfolgreich Konditionale Verzweigungen eingeführt...
+
+
+
+
 
 
 

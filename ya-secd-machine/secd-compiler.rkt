@@ -4,9 +4,13 @@
   "stack.rkt"
   "operations.rkt"
   "debug-out.rkt"
+  racket/port
   (only-in     racket
                set!
-               [set! set-it!]))
+               [set! set-it!])
+    (only-in     racket
+               open-input-file)
+               )
 ;; defiitions for the machine and the pseudo-code
 (provide compile-secd)
 ; die Elemente einer Liste von Listen aneinanderhängen
@@ -269,6 +273,13 @@
        (secd-environment value)
        empty)) 
     ))
+
+(define read-the-file
+  (lambda (fname)
+    (let* ([file-port (open-input-file fname)]
+           [content (port->string  file-port #t)])
+      (string->symbol content)
+    )))
 
 ;;(check-expect (compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2)) 3);; this works now
 ;;(check-expect (compile-secd '((lambda (x) (mul 5 x)) 2)) 10)

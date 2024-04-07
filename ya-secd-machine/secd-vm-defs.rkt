@@ -129,13 +129,16 @@
          where?-else-branch
          )
 
-;;Hier der "Prozessor" Befehlssatz
+;;Hier der "Prozessor" Befehlssatz - als Idee
 (define op-code-syms '(  push pop peek create-const
                               load-const store-const alloc free svc-open svc-read
                               svc-write svc-close
                               read write
                               store load lambda let branch apply eq?
                               where add mul div sub mod  sqrt exp))
+
+
+;; Für spätere Benutzung
 
 (define op-code?
   (lambda (term)
@@ -146,12 +149,18 @@
         (equal? 'load term)
         )))
 
+;; Hir kommt die Sektion der "Primitiven Applikationen" das sind Operationen
+;; welche direkkt in die Sprache eingebettet sind
+
+(define primitive (signature (predicate primitive?)))
+
+(: primitive? (any -> boolean))
 (define primitive?
   (lambda (term)
     (or (equal? 'add  term)
         (equal? 'sub term)
         (equal? 'mul term)
-        (equal? 'div term)
+        (equal? 'div term)        
         (condition-primitive? term))))
        
 
@@ -167,7 +176,10 @@
         (equal? 'false? term)
         )
     ))
+;; Ende der Definitionen für Primitive Application
 
+
+;; die instructionen sind die Befehle / Definitionen die die "VM" kennt 
 (define instruction
   (signature
    (mixed 
@@ -183,14 +195,6 @@
     abst
     where?)))
 
-(define complex-form-instruction
-  (signature
-   (mixed
-    base
-    var-symbol 
-    prim
-    stop
-    )))
 
 ;; here we define the stuff for machine-code; Applikations-Instruktion
 (define-record exec
@@ -206,9 +210,6 @@
 (define-record tailap
   make-tailap tailap?
   )
-
-(define-record stop
-  make-stop stop?)
 
 ; Eine Abstraktions-Instruktion hat folgende Eigenschaften:
 ; - Parameter (eine Variable)
@@ -231,6 +232,7 @@
   (define-def-bind var-symbol)
   (define-def-value define-val))
 
+;; verschiedene benötigte Signaturen
 (define definable (signature (mixed abst ap var-symbol base binding)))
 
 (define define-val (signature (list-of definable)))
@@ -245,12 +247,6 @@
 
 (define  proc-fun (signature (predicate proc-fun?)))
 
-
-
-
-(define prim-machine-code (signature (list-of complex-form-instruction)))
-
-
 ;;Ein Stack ist eine Liste von Werten
 (define stack (signature any)) ;; ändern zum aktuellen Stand
 (define dump (signature (list-of frame)))
@@ -263,13 +259,15 @@
   (binding-variable var-symbol)
   (binding-value var-value))
 
-
+;; dieser record is für die später komplett typisierte Speicherung von Werten auf dem Stack (noch nicht
+;; vollendet)
 (define-record stack-element
   make-stack-element stack-element?
   (stack-element-type var-symbol)
   (stack-element-value var-value))
 ; Ein Frame besteht aus:
 ; - Stack
+;; Stack für Abstractionen / Closures
 ; - Umgebung
 ; - Code
 (define-record frame
@@ -293,6 +291,7 @@
 
 ; Ein SECD-Zustand besteht aus:
 ; - Stack
+;; Stack für Abstractionen / Closures
 ; - Umgebung
 ; - Code
 ; - Dump
@@ -324,16 +323,12 @@
   (app-fun-variable var-symbol)
   (app-fun-code machine-code))
 
+;; Diese Struktur dient zur Darstellung eines "Conditional Branch"
 (define-record where?
   make-where? where?-?
   (where?-condition machine-code) 
   (where?-if-branch machine-code)
   (where?-else-branch machine-code))
-
-(define-record complex-form
-  make-complex-form complex-form?
-  (complex-form-prim prim)
-  (complex-form-prim-child  machine-code))
 
 
 ; Eine Instruktion für generelle Anwendung
@@ -361,10 +356,12 @@
         (char-data?  term)
         (byte-data?  term)
         (string? term)
+        (alist? term)
+        (proc-fun? term)
         (number? term))))
         
 
-
+;; Base Signatur
 (define base (signature (predicate base?)))
 (define term
   (signature
@@ -375,32 +372,7 @@
           base)))
 
 
-
-
-
-(define pcode->fun
-  (lambda (term)
-    (cond
-      ((equal?  term 'add)
-       +)
-      ((equal?  term 'sub)
-       -)
-      ((equal? term  'mul)
-       *)
-      ((equal? term  'div )
-       /)  
-      ((equal? term '==)
-       equal?)
-      ((equal? term '>)
-       >)
-      ((equal? term '<)
-       <)
-      ((equal? term '>=)
-       >=)
-      ((equal? term '<=)
-       <=)
-      )))
-
+;; Funktion zur realen Applikation von Primitives
 (define apply-primitive
   (lambda (primitive args)
     (begin
@@ -429,9 +401,9 @@
       ))))
 
 
-(define primitive (signature (predicate primitive?)))
 
-(: primitive? (any -> boolean))
+
+
 ; Prädikat für reguläre Applikationen
 (: application? (any -> boolean))
 (define application?
@@ -442,7 +414,8 @@
          (not (primitive? (first term)))
          )))
 
-
+;;hier muss geprüft werden ob man das tatsächlich braucht
+;;======================================
 (define smart-first
   (lambda (term)
     (cond
@@ -462,7 +435,7 @@
       (else (rest (list term)))
       )
     ))    
-
+;;======================================
 
 (define application (signature (predicate application?)))
 
@@ -470,8 +443,22 @@
 ; Prädikat für Abstraktionen
 (: definition? (any -> boolean))
 (define definition? (lambda (term)
-                      (equal?  term 'define)  ))
+                      (equal?  term 'define) ))
 
+;; ======================= DATATYPE DEFINITIONS (TYPED LANG) ===============
+
+(define-record alist
+  make-alist alist?
+  (alist-value base-list-type))
+
+(: alist-def? (any -> boolean))
+(define alist-def?
+    (lambda (term)
+    (and (cons? term)
+         (equal? 'alist (first term))
+          )))
+  (define base-list-type (signature (list-of base?)))
+;; ======================= DATATYPE DEFINITIONS (TYPED LANG) ===============
 
 
 ; Prädikat für Abstraktionen
@@ -514,6 +501,7 @@
 
 (define primitive-application (signature (predicate primitive-application?)))
 
+;;Record für einen abstrakten Syntax-Baum für spätere Benutzung
 (define-record ast
   make-ast ast?
   (ast-stack stack)
@@ -535,12 +523,14 @@
 ; eine Umgebung um eine Bindung erweitern
 (: extend-environment (environment symbol var-value -> environment))
 
+;; Bindung zur Umgebung zufügen
 (define  extend-environment
   (lambda (env var-symbol var-value)   
     (cons (make-binding var-symbol var-value)
           
           (remove-environment-binding env var-symbol)  )))
 
+;; Hilfsfunktion für obiges
 (: remove-environment-binding (environment symbol -> environment))
 
 (define remove-environment-binding
@@ -553,6 +543,7 @@
            (cons (first environment)
                  (remove-environment-binding (rest environment) variable)))))))
 
+;; Lookup einr Bindung in der aktuellen Umgebung
 (: lookup-act-environment (environment symbol -> var-value))
 
 (define lookup-act-environment
@@ -564,6 +555,12 @@
            (binding-value (first environment))
            (lookup-act-environment (rest environment) variable))))))
 
+;;Lookup einer Bindung -> Reihenfolge
+;;  - Aktuelle Umgebung
+;;  - Den Generationen nach geordnet von innen nach außen werden die in den Frames (Einheit auf dem Dump)
+;; abgespeicherten Umgebungen durclaufen bis wir fündig werden oder eben nicht
+;; Somit stellen wir damit eine lexikale Art der Bindung dar 
+
 (define lookup-environment
   (lambda (environment dump variable)
     (let* ((act-val (lookup-act-environment environment variable)))
@@ -571,6 +568,7 @@
             (else  (env-lookup-helper dump variable)
                    )))))
 
+;; Hilfsfunktion für Lookup
 (define env-lookup-helper (lambda (dump variable)
                             (let* ([env (frame-environment (first dump))]
                                    [binding (lookup-act-environment env variable)])                            
@@ -580,15 +578,7 @@
                                       )                            
                                   )))
 
-(define make-empty-frame
-  (lambda ()
-    (make-frame empty the-empty-environment empty )))
-
-(define new-abstract
-  (lambda (closure-sym)
-    ( make-closure closure-sym )
-    ))
-
+;; symbol? unter Ausschluss der "Schlüsselworte"
 (: var-symbol? (any -> boolean))
 (define var-symbol (signature (predicate var-symbol?)))
 (define var-symbol?
@@ -599,8 +589,7 @@
            (not (equal? token 'lambda))
            (not (equal? token 'app-fun))
            (not (primitive? token))
-           (not (equal? token 'where?))
-           (not (equal? token 'stop))
+           (not (equal? token 'cond-branch))
            (not (base? token)) )
       )))
   
