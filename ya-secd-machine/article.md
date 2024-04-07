@@ -1,7 +1,26 @@
-# Ein anderer Weg die SECD Maschine den SECD Compiler zu erklären:
+#  Über die SECD Maschine / SECD Compiler eine kurze allgemeine Definition eines Basis-Compilers auf den beinahe jeder Aufbau möglich ist:
 
 ## Ein kleines Vorwort
 
+Auf die Idee eine solche Abhandlung zu schreiben kam ich schon vor Jahren, doch hatte ich nie Zeit und Nerven dazu gefunden. Ich bin nun etwas über 33 Jahre in der Informatik tätig und war schon am Anfang meiner Laufbahn an der Entwicklung von zwei Interpretern beteiligt. Bei dem einen war ich am Kern an dem Design und der reinen Entwicklung beteiligt und für den anderen habe ich eine Debugger geschrieben.
+
+In den letzten zehn Jahren habe ich dann immer mal wieder mit rein funktionalen Sprachen entwickelt wodurch ich auf das Lambda Kalkül gestoßen bin.
+
+Die Idee für diese spezielle Art einen Compiler nd eine Mini-VM dazu zu entwickeln kam ich durch das hier in diesen Verzeichnissen vorliegende Buch und die Beispiele dazu, das überwiegend von Mike Sperber geschrieben wurde (Dr. rer. nat. Michael Sperber). Dieses Buch ist unter anderem das Material für die Ausbildung an der Universität Tübingen.
+
+Ein weiteres Mal wurdeich dazu angeregt durch ein Gespräch mit Mike Sperber in dem er mir die Grundlagen und die Vorteile dieser Art Compiler zu schreiben erläuterte.
+
+Besonderer Dank gilt hier:
+
+- Meiner Frau Abigail Sophie Jeanne Glab die mich geduldig unterstützt und natürlich meine Kinder
+- Meiner Freunde und meiner Schwester sowie meinen Eltern die mir das nötige mentale und sonstige Werkzeug mit an die Hand gaben und mich ermutigt haben
+- Natürlich auch meinen 'Mentoren' !!!! Mike Sperber, Dr. rer. nat. Eric Knauel, Markus Crestani (von ihm lernte ich viel über FFI), .... diese Liste ist sicher nicht vollständig ... ich bitte zu entschuldigen.
+- Meine Ideengeber: Kernighan / Richie, P. J. Landin, John McCarthy, Matthias Felleisen ... um nur einige zu nennen.
+- Ich danke Gott für den mir geschenkten Verstand und mein Vermögen durchzuhalten. Und weil ich Informatik gelernt habe trotz eines der schlechtesten Lehrer für Programmierung / Design, der ca. 45. % nachweislich grottenfalsch erklärt hat. Das war im ersten Jahr an der Akademie für DV Böblingen. Im dritten Jahr undim Praktikum hatte ch zum Glück Herr Toll als Praktikum Betreuer und Hern dipl. Ing Hans Röhr (R.I.P.) einen glänzenden Informatiker und Mathematiker vor dem Herrn an der Hand die während des Studiums als Mentoren agierten. 
+
+##### Anmerkung: Mike Sperber, meine Schwester Dr. med. Margit Sporer und ein mir bekannter Mathematik Lehrer Bernd Weimer haben mich auf direkte Weise oder sonstige Weise beim Schreiben dieser Abhandlung unterstützt. Und die es manchmal unbewusst durch Anregen der Inspiration unterstützt haben.
+
+Und damit nun zum eigentlichen Thema:
 
 
 ## Was diese Abhandlung voraussetzt:
@@ -655,10 +674,12 @@ Hier hilft unds wieder das Konstrukt der Closure.
 Und nun haben wir erfolgreich Konditionale Verzweigungen eingeführt...
 
 
+#### Zuweisungen und Heap Storage (absolut nicht PURE Funktional)
 
 
 
 
+#### Basis Daten Typen und deren Realisierung in der Sprache (Ein kleines Typ-System)
 
 
 

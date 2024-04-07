@@ -50,6 +50,27 @@
                      (first (rest (rest (rest term)))
                      )))))
 
+      ((heap-allocator? term)
+   (cons           
+                    (term->machine-code/t (rest term))
+            
+                     (list (make-heap-alloc))))
+            
+            
+     
+    ((heap-assignment? term)
+     (cons           
+                    (term->machine-code/t (rest term))
+            
+                     (list (make-heap-set-at!))))
+     
+
+    ((heap-getter? term)
+      (cons           
+                    (term->machine-code/t (rest term))
+            
+                     (list (make-heap-get-at))))
+
       ((var-symbol? term) (list (make-push! (list term) )))
        
       ((application? term)
@@ -119,6 +140,28 @@
                     (term->machine-code/t
                      (first (rest (rest (rest term)))
                      )))))
+    
+    ((heap-allocator? term)
+   (cons           
+                    (term->machine-code/t (rest term))
+            
+                     (list (make-heap-alloc))))
+            
+            
+     
+    ((heap-assignment? term)
+     (cons           
+                    (term->machine-code/t (rest term))
+            
+                     (list (make-heap-set-at!))))
+     
+
+    ((heap-getter? term)
+      (cons           
+                    (term->machine-code/t (rest term))
+            
+                     (list (make-heap-get-at))))
+      
        
       ((var-symbol? term)
        (list (make-push! (list term) )))
@@ -189,7 +232,26 @@
                      (first (rest (rest (rest term)))
                      )))))
          
+     ((heap-allocator? term)
+   (cons           
+                    (term->machine-code/t (rest term))
+            
+                     (list (make-heap-alloc))))
+            
+            
      
+    ((heap-assignment? term)
+     (cons           
+                    (term->machine-code/t (rest term))
+            
+                     (list (make-heap-set-at!))))
+     
+
+    ((heap-getter? term)
+      (cons           
+                    (term->machine-code/t (rest term))
+            
+                     (list (make-heap-get-at))))
       
       ((var-symbol? term)
        (list (make-push! (list term) )))
@@ -330,6 +392,9 @@
                                                 )))
                              ((app-fun higher 10))))185)
 
+
+
+
 ;; Verschachteltes where
 (check-expect
  (compile-secd'((define higher (lambda (x)
@@ -384,3 +449,15 @@
                                                        (add (app-fun test-west u) ((app-fun higher 7))))
                                                 )))
                              ((app-fun higher 10))))  #t)
+
+(check-expect (compile-secd'((define allocator
+                               (lambda (x)
+                                 
+                                  (add (heap-alloc g 8) (heap-get-at g)
+                                   )))           
+                             (define higher (lambda (x)                                             
+                                                (cond-branch (< x 11)
+                                                       (heap-set-at! g 66)
+                                                       (add 5 ((app-fun higher 10)))
+                                                )))
+                             ((app-fun higher 10))))185)

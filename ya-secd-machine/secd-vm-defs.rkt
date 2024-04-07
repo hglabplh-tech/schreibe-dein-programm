@@ -33,7 +33,6 @@
          remove-environment-binding
          lookup-environment
          lookup-act-environment
-         make-empty-frame
          make-frame
          frame?
          frame-stack
@@ -74,8 +73,7 @@
          op-stack-arity
          op-stack-out
          op-parm-arity
-         apply-primitive
-         pcode->fun
+         apply-primitive         
          primitive?
          primitive-application
          primitive-application?
@@ -127,6 +125,28 @@
          where?-condition
          where?-if-branch
          where?-else-branch
+         heap-assignment?
+         heap-set-at!
+         make-heap-set-at!
+      heap-set-at!?
+      heap-cell
+      heap-cell?
+      make-heap-cell
+      heap-cell-variable
+      heap-cell-init-value
+       make-heap-get-at
+       heap-allocator?
+       heap-alloc
+      heap-alloc?
+      make-heap-alloc
+      heap-get-at
+      heap-get-at?
+      heap-getter
+       heap-getter?
+      heap
+      heap?
+      make-heap
+      heap-storage
          )
 
 ;;Hier der "Prozessor" Befehlssatz - als Idee
@@ -188,12 +208,14 @@
     op
     ap
     tailap
-    prim
-    complex-form
+    prim    
     define-def
     apply-fun
     abst
-    where?)))
+    where?
+    heap-set-at!
+    heap-get-at
+    heap-alloc)))
 
 
 ;; here we define the stuff for machine-code; Applikations-Instruktion
@@ -263,8 +285,80 @@
 ;; vollendet)
 (define-record stack-element
   make-stack-element stack-element?
-  (stack-element-type var-symbol)
-  (stack-element-value var-value))
+ (stack-element-storagetype var-symbol) ;; chage signature 
+  (stack-element-type var-symbol) ;; change signature
+  (stack-element-datatype var-symbol);;change signature
+  (stack-element-value any)) ;; change to typed
+
+;; hier kommt die internen Definitionen einer Zuweisung
+
+;; Definition einer Zuweisung
+; Eine Zuweisungs-Instruktion ist ein Wert
+; diese Definitionen habe ich der Einfacheit halber teilweise von Mike Sperber übernommen
+
+;; Definition wie ie Zuweisung im Code aussieht
+
+;; Signaturen für Heap Operationen
+(define heap-assignment (signature (predicate heap-assignment?)))
+(define heap-allocatur (signature (predicate heap-allocator?)))
+(define heap-getter (signature (predicate heap-getter?)))
+
+
+
+(: heap-allocator? (any -> boolean))
+(define heap-allocator?
+  (lambda (term)
+    (and (cons? term)
+         (equal? 'heap-alloc (first term)))))
+
+(: heap-assignment? (any -> boolean))
+(define heap-assignment?
+  (lambda (term)
+    (and (cons? term)
+         (equal? 'heap-set-at! (first term)))))
+
+(: heap-getter? (any -> boolean))
+(define heap-getter?
+  (lambda (term)
+    (and (cons? term)
+         (equal? 'heap-get-at (first term)))))
+
+
+
+;; Rekord für eine heap Zuweisung // Getter / Allocator
+(define-record  heap-alloc
+  make-heap-alloc heap-alloc? )
+
+(define-record  heap-set-at!
+  make-heap-set-at! heap-set-at!? )
+
+(define-record  heap-get-at
+  make-heap-get-at heap-get-at? )
+
+
+
+;; Die für den Heap notwendigen Definitionen eines
+
+;; Definition einer Zelle die auf dem Heap liegt
+(define-record heap-cell
+              make-heap-cell heap-cell?
+               (heap-cell-variable var-symbol)
+               (heap-cell-init-value base) ;; change to typed
+              )
+
+;; Der Heap an sich
+
+(define heap-content (signature (list-of heap-cell)))
+
+(define-record heap
+  make-heap heap?
+  (heap-storage heap-content))
+
+;; Heap Alloc Signatur
+
+
+;; Definition eines heap Element
+
 ; Ein Frame besteht aus:
 ; - Stack
 ;; Stack für Abstractionen / Closures
