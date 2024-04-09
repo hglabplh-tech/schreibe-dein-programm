@@ -8,9 +8,9 @@
   (only-in     racket
                set!
                [set! set-it!])
-    (only-in     racket
+  (only-in     racket
                open-input-file)
-               )
+  )
 ;; defiitions for the machine and the pseudo-code
 (provide compile-secd)
 ; die Elemente einer Liste von Listen aneinanderhängen
@@ -40,36 +40,36 @@
                            )))
 
      
-    ((where-condition? term)       
+      ((where-condition? term)       
        (list (make-where?
-                    (term->machine-code
-                     (first (rest term)))
-                    (term->machine-code
-                       (first (rest (rest term))))
-                    (term->machine-code
-                     (first (rest (rest (rest term)))
-                     )))))
+              (term->machine-code
+               (first (rest term)))
+              (term->machine-code
+               (first (rest (rest term))))
+              (term->machine-code
+               (first (rest (rest (rest term)))
+                      )))))
 
-      ((heap-allocator? term)
-   (cons           
-                    (term->machine-code/t (rest term))
-            
-                     (list (make-heap-alloc))))
+    ((heap-allocator? term)
+       (append           
+        (append-lists
+         (map term->machine-code/t (rest term)))            
+        (list (make-heap-alloc))))
             
             
      
-    ((heap-assignment? term)
-     (cons           
-                    (term->machine-code/t (rest term))
-            
-                     (list (make-heap-set-at!))))
+      ((heap-assignment? term)
+       (append           
+        (append-lists
+         (map term->machine-code/t (rest term)))
+        (list (make-heap-set-at!))))
      
 
-    ((heap-getter? term)
-      (cons           
-                    (term->machine-code/t (rest term))
-            
-                     (list (make-heap-get-at))))
+      ((heap-getter? term)
+       (append          
+        (append-lists
+         (map term->machine-code/t (rest term)))            
+        (list (make-heap-get-at))))
 
       ((var-symbol? term) (list (make-push! (list term) )))
        
@@ -90,9 +90,9 @@
       ((base? term)  (list (make-push! (list term) ))) 
   
       ((primitive-application? term)
-      (append
-          (append-lists
-        (map term->machine-code/t (rest term)))
+       (append
+        (append-lists
+         (map term->machine-code/t (rest term)))
         (list (make-prim
                (smart-first term)
                2))))
@@ -131,36 +131,36 @@
          
 
       
-    ((where-condition? term)       
+      ((where-condition? term)       
        (list (make-where?
-                      (term->machine-code/t
-                     (first (rest term)))
-                    (term->machine-code/t
-                       (first (rest (rest term))))
-                    (term->machine-code/t
-                     (first (rest (rest (rest term)))
-                     )))))
+              (term->machine-code/t
+               (first (rest term)))
+              (term->machine-code/t
+               (first (rest (rest term))))
+              (term->machine-code/t
+               (first (rest (rest (rest term)))
+                      )))))
     
-    ((heap-allocator? term)
-   (cons           
-                    (term->machine-code/t (rest term))
-            
-                     (list (make-heap-alloc))))
+      ((heap-allocator? term)
+       (append           
+        (append-lists
+         (map term->machine-code/t (rest term)))            
+        (list (make-heap-alloc))))
             
             
      
-    ((heap-assignment? term)
-     (cons           
-                    (term->machine-code/t (rest term))
-            
-                     (list (make-heap-set-at!))))
+      ((heap-assignment? term)
+       (append           
+        (append-lists
+         (map term->machine-code/t (rest term)))
+        (list (make-heap-set-at!))))
      
 
-    ((heap-getter? term)
-      (cons           
-                    (term->machine-code/t (rest term))
-            
-                     (list (make-heap-get-at))))
+      ((heap-getter? term)
+       (append          
+        (append-lists
+         (map term->machine-code/t (rest term)))            
+        (list (make-heap-get-at))))
       
        
       ((var-symbol? term)
@@ -185,9 +185,9 @@
        (list (make-push! (list term) )))
     
       ((primitive-application? term)
-      (append
-           (append-lists
-        (map term->machine-code/t (rest term)))
+       (append
+        (append-lists
+         (map term->machine-code/t (rest term)))
         (list (make-prim
                (smart-first term)
                2))))
@@ -222,36 +222,36 @@
                             (first (rest (rest term))))              
                            )))
 
-     ((where-condition? term)       
+      ((where-condition? term)       
        (list (make-where?
-                      (term->machine-code/t
-                     (first (rest term)))
-                    (term->machine-code/t
-                       (first (rest (rest term))))
-                    (term->machine-code/t
-                     (first (rest (rest (rest term)))
-                     )))))
+              (term->machine-code/t
+               (first (rest term)))
+              (term->machine-code/t
+               (first (rest (rest term))))
+              (term->machine-code/t
+               (first (rest (rest (rest term)))
+                      )))))
          
-     ((heap-allocator? term)
-   (cons           
-                    (term->machine-code/t (rest term))
-            
-                     (list (make-heap-alloc))))
+   ((heap-allocator? term)
+       (append           
+        (append-lists
+         (map term->machine-code/t (rest term)))            
+        (list (make-heap-alloc))))
             
             
      
-    ((heap-assignment? term)
-     (cons           
-                    (term->machine-code/t (rest term))
-            
-                     (list (make-heap-set-at!))))
+      ((heap-assignment? term)
+       (append           
+        (append-lists
+         (map term->machine-code/t (rest term)))
+        (list (make-heap-set-at!))))
      
 
-    ((heap-getter? term)
-      (cons           
-                    (term->machine-code/t (rest term))
-            
-                     (list (make-heap-get-at))))
+      ((heap-getter? term)
+       (append          
+        (append-lists
+         (map term->machine-code/t (rest term)))            
+        (list (make-heap-get-at))))
       
       ((var-symbol? term)
        (list (make-push! (list term) )))
@@ -273,10 +273,10 @@
       
       ((base? term)  (list (make-push! (list term) )))
  
-        ((primitive-application? term)
-      (append
+      ((primitive-application? term)
+       (append
         (append-lists
-        (map term->machine-code/t (rest term)))
+         (map term->machine-code/t (rest term)))
         (list (make-prim
                (smart-first term)
                2))))
@@ -309,7 +309,8 @@
                (append
                 (append-lists
                  (map term->machine-code/t term)))
-               empty)))
+               empty
+               (make-heap (list)))))
 
 ; bis zum Ende Zustandsübergänge berechne)
 
@@ -341,7 +342,7 @@
     (let* ([file-port (open-input-file fname)]
            [content (port->string  file-port #t)])
       (string->symbol content)
-    )))
+      )))
 
 ;;(check-expect (compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2)) 3);; this works now
 ;;(check-expect (compile-secd '((lambda (x) (mul 5 x)) 2)) 10)
@@ -360,37 +361,37 @@
 
 ;; hier mussnoch ((fun arg) arg2)  abgedeckt werden
 #;(check-expect (compile-secd'((define test-west
-                               (lambda (x)
+                                 (lambda (x)
                                  
                                    (mul x 18)))
-                             (define higher (lambda (u)
-                                              (lambda ()
-                                                (cond-branch (== u 17)
-                                                       (add 5 (app-fun test-west u))
-                                                       (add 5 (app-fun test-west 12)))                                               
-                                                )))
-                             ((app-fun higher 6)))) 42) ;
+                               (define higher (lambda (u)
+                                                (lambda ()
+                                                  (cond-branch (== u 17)
+                                                               (add 5 (app-fun test-west u))
+                                                               (add 5 (app-fun test-west 12)))                                               
+                                                  )))
+                               ((app-fun higher 6)))) 42) ;
 
 #;(check-expect (compile-secd'((define test-west
-                               (lambda (x)                                 
+                                 (lambda (x)                                 
                                    (mul x 18)))
-                             (define higher (lambda (u)
-                                              (lambda ()
-                                                (cond-branch (< u 17)
-                                                       (add 5 (app-fun test-west u))
-                                                       (add 5 ((higher 10))))
-                                                )))
-                             ((app-fun higher 10)))) 185)
+                               (define higher (lambda (u)
+                                                (lambda ()
+                                                  (cond-branch (< u 17)
+                                                               (add 5 (app-fun test-west u))
+                                                               (add 5 ((higher 10))))
+                                                  )))
+                               ((app-fun higher 10)))) 185)
 
 ;; Einfacher Test für cond-branch
 (check-expect
  (compile-secd'((define higher (lambda (x)
-                                              (lambda ()
-                                                (cond-branch (< x 11)
-                                                       (mul 5 (add 7 x))
-                                                       (add 5 ((app-fun higher 10))))
-                                                )))
-                             ((app-fun higher 10))))185)
+                                 (lambda ()
+                                   (cond-branch (< x 11)
+                                                (mul 5 (add 7 x))
+                                                (add 5 ((app-fun higher 10))))
+                                   )))
+                ((app-fun higher 10))))185)
 
 
 
@@ -398,17 +399,17 @@
 ;; Verschachteltes where
 (check-expect
  (compile-secd'((define higher (lambda (x)
-                                              (lambda ()
-                                                (cond-branch (< x 11)
-                                                       (mul 5 (add 7 x))
-                                                       (cond-branch (> x 20)
-                                                       (add 5 (mul 9 x))
-                                                       (add x x))
+                                 (lambda ()
+                                   (cond-branch (< x 11)
+                                                (mul 5 (add 7 x))
+                                                (cond-branch (> x 20)
+                                                             (add 5 (mul 9 x))
+                                                             (add x x))
                                                 ))))
-                             ((app-fun higher 10))
-                              ((app-fun higher 19))
-                             ((app-fun higher 22))
-                             ) ) 185)
+                ((app-fun higher 10))
+                ((app-fun higher 19))
+                ((app-fun higher 22))
+                ) ) 185)
 #;(check-expect  (compile-secd'((define test-west
                                   (lambda (x)                                             
                                     (mul x 9) ))
@@ -431,33 +432,35 @@
 
 #;(check-expect (compile-secd '((lambda (x) (lambda (y) (add x y) 1) 2))) 3)
 
-  ;; Ultimativer Test der Rekursion
- (check-expect  (compile-secd
-                          '((define calc-base
-                                             (lambda (x)
-                                               (mul x (div ((app-fun higher 5)) 2))
-                                               ))
-                                        (define test-west
-                               (lambda (x)
-                                 (cond-branch (< u 9)
+;; Ultimativer Test der Rekursion
+(check-expect  (compile-secd
+                '((define calc-base
+                    (lambda (x)
+                      (mul x (div ((app-fun higher 5)) 2))
+                      ))
+                  (define test-west
+                    (lambda (x)
+                      (cond-branch (< u 9)
                                    (mul x 18)
-                                 (add 2 (app-fun calc-base 3)))))
-                             (define higher (lambda (u)
-                                              (lambda ()
-                                                (cond-branch (< u 9)
-                                                       (mul 5 (add 7 u))
-                                                       (add (app-fun test-west u) ((app-fun higher 7))))
-                                                )))
-                             ((app-fun higher 10))))  #t)
+                                   (add 2 (app-fun calc-base 3)))))
+                  (define higher (lambda (u)
+                                   (lambda ()
+                                     (cond-branch (< u 9)
+                                                  (mul 5 (add 7 u))
+                                                  (add (app-fun test-west u) ((app-fun higher 7))))
+                                     )))
+                  ((app-fun higher 10))))  #t)
 
-(check-expect (compile-secd'((define allocator
+(check-expect  (compile-secd
+  '((define allocator
                                (lambda (x)
-                                 
-                                  (add (heap-alloc g 8) (heap-get-at g)
-                                   )))           
+                                 (add (heap-alloc g 8)
+                                      (sub (mul x (heap-set-at! g 16))
+                                                         (heap-get-at g))
+                                      )))
                              (define higher (lambda (x)                                             
-                                                (cond-branch (< x 11)
-                                                       (heap-set-at! g 66)
-                                                       (add 5 ((app-fun higher 10)))
-                                                )))
-                             ((app-fun higher 10))))185)
+                                              (cond-branch (< x 11)
+                                                          (mul 8 7)
+                                                           (add (app-fun allocator 100) (app-fun higher 10))
+                                                           )))
+                             (app-fun higher 10))) 185)

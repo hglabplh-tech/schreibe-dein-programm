@@ -50,6 +50,7 @@
          secd-environment
          secd-code
          secd-dump
+         secd-heap
          make-closure
          closure-environment
          closure-variable
@@ -138,7 +139,7 @@
        heap-allocator?
        heap-alloc
       heap-alloc?
-      make-heap-alloc
+      make-heap-alloc      
       heap-get-at
       heap-get-at?
       heap-getter
@@ -147,6 +148,8 @@
       heap?
       make-heap
       heap-storage
+      extend-heap-stor
+      lookup-heap-stor
          )
 
 ;;Hier der "Prozessor" Befehlssatz - als Idee
@@ -284,10 +287,9 @@
 ;; dieser record is für die später komplett typisierte Speicherung von Werten auf dem Stack (noch nicht
 ;; vollendet)
 (define-record stack-element
-  make-stack-element stack-element?
- (stack-element-storagetype var-symbol) ;; chage signature 
+  make-stack-element stack-element? 
   (stack-element-type var-symbol) ;; change signature
-  (stack-element-datatype var-symbol);;change signature
+  (stack-element-datatype any);;change signature
   (stack-element-value any)) ;; change to typed
 
 ;; hier kommt die internen Definitionen einer Zuweisung
@@ -395,7 +397,9 @@
   (secd-fun-stack stack)
   (secd-environment environment)
   (secd-code machine-code)
-  (secd-dump dump))
+  (secd-dump dump)
+  (secd-heap heap)
+  )
 
 ; Eine Instruktion für eine primitive Applikation hat folgende
 ; Eigenschaften:
@@ -607,7 +611,7 @@
 
 (define new-stack-element
   (lambda (type val)
-    (make-stack-element type val)
+    (make-stack-element type base? val)
     ))
 
 
@@ -666,11 +670,53 @@
 (define env-lookup-helper (lambda (dump variable)
                             (let* ([env (frame-environment (first dump))]
                                    [binding (lookup-act-environment env variable)])                            
-                                  (if (empty? dump)
+                                  (if (not (empty? binding))
                                       binding
-                                      (env-lookup-helper (rest dump) variable)
+                                      (if (empty? (rest dump))
+                                          empty
+                                          (env-lookup-helper (rest dump) variable)
                                       )                            
-                                  )))
+                                  ))))
+
+
+;; Lookup einr Bindung in der aktuellen Umgebung
+(: lookup-heap-stor (symbol -> var-value))
+
+(define lookup-heap-stor
+  (lambda (heap-instance-rec variable)
+    (let ([heap-instance (heap-storage heap-instance-rec)])
+    (cond
+      ((empty? heap-instance) empty)
+      ((cons? heap-instance)
+       (if (equal? variable (heap-cell-variable (first heap-instance)))
+           (heap-cell-init-value (first heap-instance))
+           (lookup-heap-stor (rest heap-instance) variable)))))))
+
+; eine Umgebung um eine Bindung erweitern
+(: extend-heap-stor (symbol -> var-value))
+
+;; Bindung zur Umgebung zufügen
+(define  extend-heap-stor
+  (lambda (heap-inst-rec var-symbol var-value)
+    (let ([heap-inst (heap-storage heap-inst-rec)])
+      
+    (make-heap (cons (make-heap-cell var-symbol var-value)      
+          (remove-heap-stor-cell heap-inst  var-symbol)))
+      )))
+
+;; Hilfsfunktion für obiges
+(: remove-heap-stor-cell (symbol ->  heap))
+
+(define remove-heap-stor-cell
+  (lambda (heap-instance variable)
+    (cond
+      ((empty? heap-instance) empty)
+      ((cons? heap-instance)
+       (if (equal? variable (heap-cell-variable (first heap-instance)))
+           (rest heap-instance)
+           (cons (first heap-instance)
+                 (remove-heap-stor-cell (rest heap-instance) variable)))))))
+
 
 ;; symbol? unter Ausschluss der "Schlüsselworte"
 (: var-symbol? (any -> boolean))

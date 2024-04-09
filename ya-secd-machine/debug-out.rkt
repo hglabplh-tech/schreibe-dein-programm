@@ -18,6 +18,7 @@
  write-object-nl
  debug-to-print-secd
  print-stack-env-code
+ debug-snap-heap
  )
 
 (define debug-snap-stack
@@ -51,6 +52,32 @@
       (debug-print "------ End Actual Env --------------")
       (write-newline)
       )))
+
+(define debug-snap-heap
+  (lambda (the-heap-rec message)
+    (let ([the-heap (heap-storage the-heap-rec)])
+    (begin
+      (write-object-nl message)
+      (write-newline)          
+      (debug-print "------ Begin The Heap --------------")
+      (write-newline)
+      (if (not (empty? the-heap))      
+          (for-each (lambda (bind)
+                      (begin
+                        (write-newline)
+                        (debug-print "------ Begin Heap Cell --------------")
+                        (write-newline)
+                        (debug-print (heap-cell-variable bind))
+                        (write-newline)
+                        (debug-print (heap-cell-init-value bind))
+                        (write-newline)
+                        (debug-print "------ End Heap Cell --------------")
+                        (write-newline)))
+                    the-heap)
+                    (write-newline))
+      (debug-print "------ End The Heap --------------")
+      (write-newline)
+      ))))
 
 (define debug-snap-frame
   (lambda (frame message)
@@ -145,7 +172,11 @@
       (debug-print (secd-code secd-rec))
       (write-object-nl  "------------ End SECD CODE--------------------")
       (debug-snap-dump (secd-dump secd-rec) message)
-      (write-object-nl  "------------ End SECD --------------------"))))
+      (write-object-nl  "------------Begin SECD Heap--------------------")
+      (debug-snap-heap (secd-heap secd-rec) message)
+       (write-object-nl  "------------End SECD Heap--------------------")
+        (write-object-nl  "------------End SECD -------------------------")
+      )))
 
 (define write-object-nl
   (lambda (message)

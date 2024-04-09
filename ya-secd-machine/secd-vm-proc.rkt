@@ -17,7 +17,7 @@
                          [env (ast-env ast )]
                          [dump (ast-dump ast)]
                          [act-frame (first dump)]
-                         [state (make-secd op-stack (make-stack (list)) env code dump)])
+                         [state (make-secd op-stack (make-stack (list)) env code dump (make-heap (list)))])
                     (begin
                       
                       (secd-step* state)))))
@@ -38,7 +38,8 @@
                    (secd-fun-stack state)
                    (secd-environment state)
                    (secd-code state)
-                   (secd-dump state))
+                   (secd-dump state)
+                   (secd-heap state))
         (secd-exec-prim (really-process state)) ) ))
 
 
@@ -56,6 +57,7 @@
                          (define env (secd-environment state))
                          (define code (secd-code state))
                          (define dump (secd-dump state))
+                         (define heap-inst (secd-heap state))
                          (begin
                            (if (not (empty? code))
                       
@@ -73,7 +75,7 @@
                                   (begin
                                     (write-object-nl param-var)
                                     (write-string "there is NO closure ON stack.....")
-                                    (op-stack 'push!  (make-stack-element 'param param-var))
+                                    (op-stack 'push!  (make-stack-element 'param base? param-var))
                                     (write-string "push closure") 
                                     (fun-stack 'push! the-closure)
                                     (fun-stack 'print-stack)
@@ -91,7 +93,8 @@
                                      env
                                      ;;(closure-code the-closure)
                                      (rest code)
-                                     dump)))))
+                                     dump
+                                     heap-inst)))))
                                           
                                   
                                   
@@ -128,23 +131,21 @@
                                                      (begin
                                                      (write-string (number->string bound-value))
                                                ((op-operation (first code))  op-stack  (new-stack-element 'app
-                                                                                              bound-value))
+                                                                                              bound-value))))
+                                               (else
+                                                      ((op-operation (first code))  op-stack  (new-stack-element 'app
+                                                                                              val)))
                                                  )))
-                                             
-                                                 
-                                                   
-                                                  
-                                        
-                                             ;; TODO: handle stack in the right way
                               
-                                        )) ))
-                                   
+                                        ))
+                                   (debug-snap-stack op-stack "stack after push correct ???!!!???")
                                   (make-secd
                                    op-stack
                                    fun-stack
                                    env
                                    (rest code)
-                                   dump)
+                                   dump
+                                   heap-inst)
                                   
                                   )))
                              
@@ -157,10 +158,83 @@
                                  fun-stack
                                  env
                                  (rest code)
-                                 dump)
+                                 dump
+                                 heap-inst)
                                 ))
-                             
-                           
+
+                             ((heap-alloc? (first code))
+                                  (let* ([the-value  (stack-element-value (op-stack 'pop!))]
+                                       [identifier (stack-element-value (op-stack 'pop!))]
+                                       [act-value (lookup-heap-stor  heap-inst  identifier)])
+                                    (begin
+                                    (if (empty? act-value)
+                                       (let ([new-heap-inst (extend-heap-stor heap-inst identifier the-value) ])
+                                         (begin
+                                      (op-stack 'push! (new-stack-element 'app the-value))
+                                      (debug-snap-heap heap-inst "print heap in ALLOC")
+                                              (make-secd
+                                 op-stack
+                                 fun-stack
+                                 env
+                                 (rest code)
+                                 dump
+                                 new-heap-inst)
+                                         ))
+                                       (make-secd
+                                 op-stack
+                                 fun-stack
+                                 env
+                                 (rest code)
+                                 dump
+                                 heap-inst)
+                                     ))                              
+                              ))
+                                  
+                             ((heap-set-at!? (first code))
+                                  (let* ([the-value  (stack-element-value (op-stack 'pop!))]
+                                       [identifier (stack-element-value (op-stack 'pop!))]
+                                       [act-value (lookup-heap-stor  heap-inst  identifier)])
+                                    (begin
+                                    (if (not (empty? act-value))                                       
+                                          (let ([heap-inst-new  (extend-heap-stor heap-inst identifier the-value)])
+                                          (begin
+                                     (debug-snap-heap heap-inst "print heap in SET")
+                                     
+                                        (extend-heap-stor heap-inst identifier the-value)
+                                         (op-stack 'push! (new-stack-element 'app the-value)) 
+                                        (make-secd
+                                 op-stack
+                                 fun-stack
+                                 env
+                                 (rest code)
+                                 dump
+                                 heap-inst-new)))
+                                      (make-secd
+                                 op-stack
+                                 fun-stack
+                                 env
+                                 (rest code)
+                                 dump
+                                 heap-inst)
+                              ))))
+
+                                  ((heap-get-at? (first code))                                
+                                  (let* (
+                                       [identifier (stack-element-value (op-stack 'pop!))]
+                                       [act-value (lookup-heap-stor  heap-inst  identifier)])
+                                       (begin
+                                     (debug-snap-heap heap-inst "print heap in get")
+                                      (op-stack 'push! (new-stack-element 'app act-value))
+                                        (make-secd
+                                 op-stack
+                                 fun-stack
+                                 env
+                                 (rest code)
+                                 dump
+                                 heap-inst)
+                                     )
+                                                
+                              ))
                                      
                              ((where?-? (first code))
                                  (let*  (
@@ -177,7 +251,8 @@
                                                              fun-stack
                                                              env
                                                             (where?-condition (first code))
-                                                            dump)])
+                                                            dump
+                                                            heap-inst)])
                                    (begin
                                   
                                    (let* ([res-secd  (secd-exec-prim cond-secd)]
@@ -202,8 +277,9 @@
                                               ;;  (first stack))
                                               (make-frame op-stack fun-stack env (rest code))
                                               dump)
+                                              heap-inst)
                                              ) ) ))
-                                     )
+                                     
                                    
 
                              ((prim? (first code))                    
@@ -223,7 +299,8 @@
                                  fun-stack
                                  env
                                  (rest code)
-                                 dump)])
+                                 dump
+                                 heap-inst)])
                                  (begin
                                     (print-stack-env-code op-stack fun-stack env (rest code) "state given by prim? --> ")
                                 secd-ret)
@@ -248,6 +325,7 @@
                                        extended-env
                                        (rest code)
                                        dump
+                                       heap-inst
                                   ))))
                                   
                                        
@@ -302,7 +380,8 @@
                                               ;;  (first stack))
                                               (make-frame op-stack fun-stack env (rest code))
                                               dump)
-                                             ) ) ))))
+                                              heap-inst)
+                                             ) ) )))
                    
                              ((tailap? (first code)) ;; nach stack und environment sehen
                               (let ([closure (fun-stack 'pop!)]
@@ -322,14 +401,15 @@
                                             (closure-variable closure)
                                             (op-stack 'pop!))    
                                            (closure-code closure)
-                                           dump))))                         
+                                           dump
+                                           heap-inst))))                         
                                  (else
-                                  (leave-context op-stack fun-stack dump)
+                                  (leave-context op-stack fun-stack dump heap-inst)
                                   ))     
-   (leave-context op-stack fun-stack dump)))))
+   (leave-context op-stack fun-stack dump heap-inst)))))
 
 (define leave-context
-  (lambda(op-stack fun-stack dump)
+  (lambda(op-stack fun-stack dump heap-inst)
         (let* ([ frame (first dump) ]       
             [ret-stack (frame-stack frame)]
           ;;  [ret-stack (op-stack 'add-all! ret-stack)]
@@ -356,7 +436,8 @@
                                    fun-stack
                                    (frame-environment frame)
                                    (frame-code frame)
-                                   (rest dump))
+                                   (rest dump)
+                                   heap-inst)
                                   ))
     )))
 
@@ -389,6 +470,7 @@
      (define op-stack (secd-stack secd-state))
      (define fun-stack (secd-fun-stack secd-state))
      (define dump (secd-dump secd-state))
+    (define heap-inst (secd-heap secd-state))
   (begin
     (let*  ([inner-code (app-fun-code fun-app-rec)]
             [bind-var (app-fun-variable fun-app-rec)]
@@ -400,7 +482,7 @@
                                                       (abst-variable (first  the-abst-code))
                                                        (abst-code (first  the-abst-code))                                                                
                                                       env)]                           
-             [call-state (make-secd op-stack fun-stack env inner-code dump)]
+             [call-state (make-secd op-stack fun-stack env inner-code dump heap-inst)]
              [new-state (really-process call-state)]
             
             )
@@ -441,6 +523,7 @@
                                          (cons
                                           (make-frame op-stack fun-stack env (rest code))
                                           dump)
+                                          heap-inst
       )
                                 
                                
@@ -453,7 +536,12 @@
 (define eval-secd (lambda (ast)
                     (let* ([fresh-stack (lambda ()
                                           (make-stack (list)))]
-                           [secd-mach (make-secd  (fresh-stack)  (fresh-stack) (ast-env ast) (ast-code ast) (ast-dump ast))]
+                           [secd-mach (make-secd  (fresh-stack)
+                                                  (fresh-stack)
+                                                  (ast-env ast)
+                                                  (ast-code ast)
+                                                  (ast-dump ast)
+                                                  (make-heap (list)))]
                            [new-frame (make-frame (fresh-stack) (fresh-stack) (ast-env ast)  empty)]
                            [dump (append (list new-frame) (ast-dump ast))]
                            [result
@@ -570,3 +658,18 @@
                               (app-fun higher 19)
                              (app-fun higher 22)
                              ) )) 203)
+
+(check-expect (eval-secd
+ (compile-secd
+   '((define allocator
+                               (lambda (x)
+                                 (add (heap-alloc g 8)
+                                      (sub (mul x (heap-set-at! g 16))
+                                                         (heap-get-at g))
+                                      )))
+                             (define higher (lambda (x)                                             
+                                              (cond-branch (< x 11)
+                                                          (mul 8 7)
+                                                           (add (app-fun allocator 100) (app-fun higher 10))
+                                                           )))
+                             (app-fun higher 12))))  1648)
