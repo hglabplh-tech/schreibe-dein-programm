@@ -1,0 +1,8 @@
+(("include-funs.secd.rkt")
+((define higher (lambda (u)
+                                   (lambda ()
+                                     (cond-branch (< u 9)
+                                                  (mul 5 (add 7 u))
+                                                  (add (app-fun test-west u) ((app-fun higher 7))))
+                                     )))
+                  ((app-fun higher 10))))

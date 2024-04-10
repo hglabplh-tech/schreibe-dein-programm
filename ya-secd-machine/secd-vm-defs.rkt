@@ -150,6 +150,22 @@
       heap-storage
       extend-heap-stor
       lookup-heap-stor
+      is-where?
+      is?
+      single-cond
+      make-single-cond
+      single-cond?
+      single-cond-what
+      single-cond-code
+      conditions
+      make-conditions
+      conditions?
+      conditions-count
+      begin-it?
+      code-block
+      make-code-block
+      code-block?
+      code-block-code
          )
 
 ;;Hier der "Prozessor" Befehlssatz - als Idee
@@ -218,7 +234,9 @@
     where?
     heap-set-at!
     heap-get-at
-    heap-alloc)))
+    heap-alloc
+    single-cond
+    conditions)))
 
 
 ;; here we define the stuff for machine-code; Applikations-Instruktion
@@ -428,6 +446,50 @@
   (where?-if-branch machine-code)
   (where?-else-branch machine-code))
 
+;; Definition eines Begin Blocks - Instruktions-Sequenz
+(: begin-it? (any -> boolean))
+(define begin-it?
+  (lambda (term)
+  (and (cons? term)
+       (equal? 'code-block (first term)))))
+
+  (define-record code-block
+      make-code-block code-block?
+      (code-block-code machine-code))
+
+
+;; Definition eines  generellen Blocks von Bedingungen
+
+;; Definition der instruction keywords für Bedingungen
+
+(: is-where? (any -> boolean))
+(define is-where?
+  (lambda (term)
+  (and (cons? term)
+       (equal? 'where-cond (first term)))))
+
+(: is? (any -> boolean))
+(define is?
+  (lambda (term)
+  (and (cons? term)
+       (equal? 'is? (first term)))))
+
+
+
+;; Definition einer einzelnen enthltenen Bedingung
+(define-record single-cond
+  make-single-cond single-cond?
+  (single-cond-what machine-code)
+  (single-cond-code machine-code))
+
+;; Definition des Bedingungs-Blocks
+(define-record conditions
+  make-conditions conditions?
+  (conditions-count number)
+  )
+
+;; define record for begin
+
 
 ; Eine Instruktion für generelle Anwendung
 ; Eigenschaften:
@@ -455,6 +517,7 @@
         (byte-data?  term)
         (string? term)
         (alist? term)
+        (is? term)
         (proc-fun? term)
         (number? term))))
         
@@ -680,7 +743,7 @@
 
 
 ;; Lookup einr Bindung in der aktuellen Umgebung
-(: lookup-heap-stor (symbol -> var-value))
+(: lookup-heap-stor (heap? symbol -> var-value))
 
 (define lookup-heap-stor
   (lambda (heap-instance-rec variable)
@@ -693,7 +756,7 @@
            (lookup-heap-stor (rest heap-instance) variable)))))))
 
 ; eine Umgebung um eine Bindung erweitern
-(: extend-heap-stor (symbol -> var-value))
+(: extend-heap-stor (heap? symbol var-value -> heap?))
 
 ;; Bindung zur Umgebung zufügen
 (define  extend-heap-stor
@@ -705,7 +768,7 @@
       )))
 
 ;; Hilfsfunktion für obiges
-(: remove-heap-stor-cell (symbol ->  heap))
+(: remove-heap-stor-cell ((list-of heap-cell?) var-symbol ->  (list-of heap-cell?)))
 
 (define remove-heap-stor-cell
   (lambda (heap-instance variable)

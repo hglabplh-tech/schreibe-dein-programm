@@ -10,6 +10,8 @@
                [set! set-it!])
   (only-in     racket
                open-input-file)
+  (only-in     racket/base
+               datum->syntax)
   )
 ;; defiitions for the machine and the pseudo-code
 (provide compile-secd)
@@ -38,7 +40,12 @@
                            (term->machine-code
                             (first (rest (rest term))))              
                            )))
-
+      
+     ((begin-it?  term)
+       (list (make-code-block 
+                           (term->machine-code
+                            (rest term))))              
+                           )
      
       ((where-condition? term)       
        (list (make-where?
@@ -50,7 +57,21 @@
                (first (rest (rest (rest term)))
                       )))))
 
-    ((heap-allocator? term)
+      ((is? term)
+       (list (make-push! (list (make-single-cond
+                                (term->machine-code
+                                 (first (rest term)))
+                                (term->machine-code
+                                 (first (rest (rest term)))))))))
+
+        ((is-where? term)
+       (append
+        (append-lists
+         (map term->machine-code/t (rest (rest term))))
+       (list (make-conditions (first (rest term))))))
+                           
+
+      ((heap-allocator? term)
        (append           
         (append-lists
          (map term->machine-code/t (rest term)))            
@@ -129,7 +150,11 @@
                             (first (rest (rest term))))              
                            )))
          
-
+    ((begin-it?  term)
+       (list (make-code-block 
+                           (term->machine-code/t
+                            (rest term))))              
+                           )
       
       ((where-condition? term)       
        (list (make-where?
@@ -140,7 +165,22 @@
               (term->machine-code/t
                (first (rest (rest (rest term)))
                       )))))
-    
+
+      ((is? term)
+       (list (make-push! (list (make-single-cond
+                                (term->machine-code/t
+                                 (first (rest term)))
+                                (term->machine-code/t
+                                 (first (rest (rest term)))))))))
+
+       ((is-where? term)
+       (append
+        (append-lists
+         (map term->machine-code/t (rest (rest term))))
+       (list (make-conditions (first (rest term))))))
+                           
+                           
+           
       ((heap-allocator? term)
        (append           
         (append-lists
@@ -222,6 +262,12 @@
                             (first (rest (rest term))))              
                            )))
 
+      ((begin-it?  term)
+       (list (make-code-block 
+                           (term->machine-code/t
+                            (rest term))))              
+                           )
+
       ((where-condition? term)       
        (list (make-where?
               (term->machine-code/t
@@ -231,8 +277,24 @@
               (term->machine-code/t
                (first (rest (rest (rest term)))
                       )))))
+
+         ((is-where? term)
+       (append
+        (append-lists
+         (map term->machine-code/t (rest (rest term))))
+       (list (make-conditions (first (rest term))))))
+                           
+                           
+
+      
+      ((is? term)
+       (list (make-push!(list (make-single-cond
+                               (term->machine-code/t
+                                (first (rest term)))
+                               (term->machine-code/t
+                                (first (rest (rest term)))))))))
          
-   ((heap-allocator? term)
+      ((heap-allocator? term)
        (append           
         (append-lists
          (map term->machine-code/t (rest term)))            
@@ -340,10 +402,25 @@
 (define read-the-file
   (lambda (fname)
     (let* ([file-port (open-input-file fname)]
-           [content (port->string  file-port #t)])
-      (string->symbol content)
+           [content (datum->syntax #f (port->string  file-port))])
+      ;;(string->symbol content)
+      content
       )))
 
+(define read-analyze-compile
+  (lambda (source-fname)
+    (let* ([content (read-the-file source-fname)]
+           [include-section (first content)]
+           [code-section (rest content)]
+           )
+      (begin
+        (for-each (lambda (fname)
+                    (read-analyze-compile fname))
+                  include-section)
+        (compile-secd code-section)      
+        ))))
+
+;; Diese Audrücke müssen erneut geprüft werden
 ;;(check-expect (compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2)) 3);; this works now
 ;;(check-expect (compile-secd '((lambda (x) (mul 5 x)) 2)) 10)
 ;;(check-expect (compile-secd '(lambda (x) (lambda (y) (div 120 (mul y  (add x y)))) 1) 2) 20)
@@ -452,15 +529,43 @@
                   ((app-fun higher 10))))  #t)
 
 (check-expect  (compile-secd
-  '((define allocator
-                               (lambda (x)
-                                 (add (heap-alloc g 8)
-                                      (sub (mul x (heap-set-at! g 16))
-                                                         (heap-get-at g))
-                                      )))
-                             (define higher (lambda (x)                                             
-                                              (cond-branch (< x 11)
-                                                          (mul 8 7)
-                                                           (add (app-fun allocator 100) (app-fun higher 10))
-                                                           )))
-                             (app-fun higher 10))) 185)
+                '((define allocator
+                    (lambda (x)
+                      (add (heap-alloc g 8)
+                           (sub (mul x (heap-set-at! g 16))
+                                (heap-get-at g))
+                           )))
+                  (define higher (lambda (x)                                             
+                                   (cond-branch (< x 11)
+                                                (mul 8 7)
+                                                (add (app-fun allocator 100) (app-fun higher 10))
+                                                )))
+                  (app-fun higher 10))) 185)
+
+(check-expect  (compile-secd
+                '((define allocator
+                    (lambda (x)
+                      (add (heap-alloc g 8)
+                           (sub (mul x (heap-set-at! g 16))
+                                (heap-get-at g))
+                           )))
+                  (define higher (lambda (x)
+                                   (code-block
+                                   (where-cond  4 
+                                                (is? (== x 40)
+                                                     (add 3 4))
+                                                (is? (== x 80)
+                                                     (sub x (app-fun higher 10)))
+                                                (is? (< x 11)
+                                                     (mul 8 7))
+                                                (is? (> x 12)
+                                                (add (app-fun allocator 100) (app-fun higher 10))
+                                                ))
+                                    (cond-branch (> x 1100)
+                                                (mul 3 90)
+                                                (add (app-fun allocator 200) (app-fun higher 110))
+                                                ))
+                                   ))
+                  (app-fun higher 10))) 185)
+;;(write-string (symbol->string (read-the-file "main-test.secd.rkt")))
+;;(read-analyze-compile "main-test.secd.rkt")
