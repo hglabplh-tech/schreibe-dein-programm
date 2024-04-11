@@ -41,11 +41,11 @@
                             (first (rest (rest term))))              
                            )))
       
-     ((begin-it?  term)
+      ((begin-it?  term)
        (list (make-code-block 
-                           (term->machine-code
-                            (rest term))))              
-                           )
+              (term->machine-code
+               (rest term))))              
+       )
      
       ((where-condition? term)       
        (list (make-where?
@@ -57,19 +57,21 @@
                (first (rest (rest (rest term)))
                       )))))
 
-      ((is? term)
-       (list (make-push! (list (make-single-cond
-                                (term->machine-code
-                                 (first (rest term)))
-                                (term->machine-code
-                                 (first (rest (rest term)))))))))
+   
 
-        ((is-where? term)
+      ((is-where? term)      
        (append
-        (append-lists
-         (map term->machine-code/t (rest (rest term))))
-       (list (make-conditions (first (rest term))))))
-                           
+        (list (make-conditions  (map 
+                                       term->machine-code 
+                                     (rest term))))))
+
+      ((is? term)     
+       (list (make-single-cond
+                               (term->machine-code
+                                (first (rest term)))
+                                 (append
+                               (term->machine-code
+                                (first (rest (rest term)))) (list (make-break))))))
 
       ((heap-allocator? term)
        (append           
@@ -150,11 +152,11 @@
                             (first (rest (rest term))))              
                            )))
          
-    ((begin-it?  term)
+      ((begin-it?  term)
        (list (make-code-block 
-                           (term->machine-code/t
-                            (rest term))))              
-                           )
+              (term->machine-code/t
+               (rest term))))              
+       )
       
       ((where-condition? term)       
        (list (make-where?
@@ -166,19 +168,23 @@
                (first (rest (rest (rest term)))
                       )))))
 
-      ((is? term)
-       (list (make-push! (list (make-single-cond
-                                (term->machine-code/t
-                                 (first (rest term)))
-                                (term->machine-code/t
-                                 (first (rest (rest term)))))))))
+   
 
-       ((is-where? term)
+          
+    ((is-where? term)      
        (append
-        (append-lists
-         (map term->machine-code/t (rest (rest term))))
-       (list (make-conditions (first (rest term))))))
-                           
+        (list (make-conditions  (map 
+                                       term->machine-code/t
+                                     (rest term))))))
+
+
+   ((is? term)     
+       (list (make-single-cond
+                               (term->machine-code/t
+                                (first (rest term)))
+                                 (append
+                               (term->machine-code/t
+                                (first (rest (rest term)))) (list (make-break))))))
                            
            
       ((heap-allocator? term)
@@ -264,9 +270,9 @@
 
       ((begin-it?  term)
        (list (make-code-block 
-                           (term->machine-code/t
-                            (rest term))))              
-                           )
+              (term->machine-code/t
+               (rest term))))              
+       )
 
       ((where-condition? term)       
        (list (make-where?
@@ -278,21 +284,23 @@
                (first (rest (rest (rest term)))
                       )))))
 
-         ((is-where? term)
+     ((is-where? term)      
        (append
-        (append-lists
-         (map term->machine-code/t (rest (rest term))))
-       (list (make-conditions (first (rest term))))))
+        (list (make-conditions  (map 
+                                       term->machine-code/t
+                                     (rest term))))))
+
                            
                            
 
       
-      ((is? term)
-       (list (make-push!(list (make-single-cond
+    ((is? term)     
+       (list (make-single-cond
                                (term->machine-code/t
                                 (first (rest term)))
+                                 (append
                                (term->machine-code/t
-                                (first (rest (rest term)))))))))
+                                (first (rest (rest term)))) (list (make-break))))))
          
       ((heap-allocator? term)
        (append           
@@ -352,6 +360,7 @@
        (list)
        )
       )))
+
 
 (define new-abstract
   (lambda (sedc closure-sym)
@@ -551,20 +560,20 @@
                            )))
                   (define higher (lambda (x)
                                    (code-block
-                                   (where-cond  4 
-                                                (is? (== x 40)
-                                                     (add 3 4))
-                                                (is? (== x 80)
-                                                     (sub x (app-fun higher 10)))
-                                                (is? (< x 11)
-                                                     (mul 8 7))
-                                                (is? (> x 12)
-                                                (add (app-fun allocator 100) (app-fun higher 10))
-                                                ))
+                                    (where-cond  
+                                     (is? (== x 40)
+                                          (add 3 4))
+                                     (is? (== x 80)
+                                          (sub x (app-fun higher 10)))
+                                     (is? (< x 11)
+                                          (mul 8 7))
+                                     (is? (> x 12)
+                                          (add (app-fun allocator 100) (app-fun higher 10))
+                                          ))
                                     (cond-branch (> x 1100)
-                                                (mul 3 90)
-                                                (add (app-fun allocator 200) (app-fun higher 110))
-                                                ))
+                                                 (mul 3 90)
+                                                 (add (app-fun allocator 200) (app-fun higher 110))
+                                                 ))
                                    ))
                   (app-fun higher 10))) 185)
 ;;(write-string (symbol->string (read-the-file "main-test.secd.rkt")))

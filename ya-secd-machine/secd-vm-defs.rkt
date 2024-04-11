@@ -92,9 +92,7 @@
          ast-dump
          op-code?
          instruction
-         machine-code  
-         make-exec
-         exec?
+         machine-code    
          smart-first
          smart-rest
          definable
@@ -160,12 +158,15 @@
       conditions
       make-conditions
       conditions?
-      conditions-count
+      conditions-conds
       begin-it?
       code-block
       make-code-block
       code-block?
       code-block-code
+      break
+    break?
+    make-break
          )
 
 ;;Hier der "Prozessor" Befehlssatz - als Idee
@@ -236,12 +237,11 @@
     heap-get-at
     heap-alloc
     single-cond
-    conditions)))
+    conditions
+    )))
 
 
-;; here we define the stuff for machine-code; Applikations-Instruktion
-(define-record exec
-  make-exec exec?)
+
 
 ; Applikations-Instruktion
 (define-record ap
@@ -475,6 +475,9 @@
        (equal? 'is? (first term)))))
 
 
+;; Definition für den Ausstieg aus where-cond
+(define-record  break
+  make-break break?)
 
 ;; Definition einer einzelnen enthltenen Bedingung
 (define-record single-cond
@@ -485,9 +488,8 @@
 ;; Definition des Bedingungs-Blocks
 (define-record conditions
   make-conditions conditions?
-  (conditions-count number)
-  )
-
+  (conditions-conds (list-of single-cond))
+ )
 ;; define record for begin
 
 
@@ -743,7 +745,7 @@
 
 
 ;; Lookup einr Bindung in der aktuellen Umgebung
-(: lookup-heap-stor (heap? symbol -> var-value))
+(: lookup-heap-stor (heap symbol -> var-value))
 
 (define lookup-heap-stor
   (lambda (heap-instance-rec variable)
@@ -756,7 +758,7 @@
            (lookup-heap-stor (rest heap-instance) variable)))))))
 
 ; eine Umgebung um eine Bindung erweitern
-(: extend-heap-stor (heap? symbol var-value -> heap?))
+(: extend-heap-stor (heap symbol var-value -> heap))
 
 ;; Bindung zur Umgebung zufügen
 (define  extend-heap-stor
@@ -768,7 +770,7 @@
       )))
 
 ;; Hilfsfunktion für obiges
-(: remove-heap-stor-cell ((list-of heap-cell?) var-symbol ->  (list-of heap-cell?)))
+(: remove-heap-stor-cell ((list-of heap-cell) var-symbol ->  (list-of heap-cell)))
 
 (define remove-heap-stor-cell
   (lambda (heap-instance variable)
