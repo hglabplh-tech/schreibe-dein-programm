@@ -41,6 +41,7 @@
          frame-code
          term
          abstraction?
+         more-abstraction?
          application?
          var-value
          secd
@@ -95,7 +96,6 @@
          machine-code    
          smart-first
          smart-rest
-         definable
          definition?
          define-val
          define-def
@@ -117,10 +117,10 @@
          stack-element-type
          stack-element-value
          new-stack-element
-         where?
+         where
          where-condition?
-         make-where?
-         where?-?
+         make-where
+         where?
          where?-condition
          where?-if-branch
          where?-else-branch
@@ -149,6 +149,7 @@
       extend-heap-stor
       lookup-heap-stor
       is-where?
+      is
       is?
       single-cond
       make-single-cond
@@ -167,6 +168,7 @@
       break
     break?
     make-break
+    rest-or-empty
          )
 
 ;;Hier der "Prozessor" Befehlssatz - als Idee
@@ -230,9 +232,10 @@
     tailap
     prim    
     define-def
-    apply-fun
+    app-fun
     abst
-    where?
+    where
+    single-cond
     heap-set-at!
     heap-get-at
     heap-alloc
@@ -263,9 +266,18 @@
   (abst-code machine-code))
 
 (define eval-param (lambda (term)
-                     (if (empty? term)
-                         'no-parm-nop
-                         (first term))))
+                     (if (symbol? (smart-first term))
+                          (smart-first term)
+                         '++_no_parm)))
+
+
+(define rest-or-empty
+  (lambda (token)
+    (if (and (cons? token
+                    )(cons? (rest token)))
+        (rest token)
+        (list)
+        )))
 
 ; Eine Deefinitions-Instruktion hat folgende Eigenschaften:
 ; -  Ein Bezeichner
@@ -276,11 +288,9 @@
   (define-def-value define-val))
 
 ;; verschiedene benötigte Signaturen
-(define definable (signature (mixed abst ap var-symbol base binding)))
 
-(define define-val (signature (list-of definable)))
 
-(define apply-fun (signature (list-of definable)))
+(define define-val (signature term))
 
 (define var-value (signature any))
 
@@ -330,6 +340,8 @@
   (lambda (term)
     (and (cons? term)
          (equal? 'heap-alloc (first term)))))
+
+(define heap-allocator (signature (predicate heap-allocator?)))
 
 (: heap-assignment? (any -> boolean))
 (define heap-assignment?
@@ -440,8 +452,8 @@
   (app-fun-code machine-code))
 
 ;; Diese Struktur dient zur Darstellung eines "Conditional Branch"
-(define-record where?
-  make-where? where?-?
+(define-record where
+  make-where where?
   (where?-condition machine-code) 
   (where?-if-branch machine-code)
   (where?-else-branch machine-code))
@@ -468,11 +480,15 @@
   (and (cons? term)
        (equal? 'where-cond (first term)))))
 
+(define is-where (signature (predicate is-where?)))
+
 (: is? (any -> boolean))
 (define is?
   (lambda (term)
   (and (cons? term)
        (equal? 'is? (first term)))))
+
+(define is (signature (predicate is?)))
 
 
 ;; Definition für den Ausstieg aus where-cond
@@ -529,9 +545,18 @@
 (define term
   (signature
    (mixed var-symbol
+          definition
+          fun-application
+          where-condition
           application
           abstraction
+          more-abstraction
           primitive-application
+          is-where
+          is
+          heap-allocator
+          heap-getter
+          heap-assignment
           base)))
 
 
@@ -572,7 +597,8 @@
 (define application?
   (lambda (term)
     (and (cons? term)         
-         (not (equal? 'lambda (first term)))       
+         (not (equal? 'lambda (first term)))
+         (not (equal? 'lfn (first term)))       
          (not (equal? 'define (first term)))
          (not (primitive? (first term)))
          )))
@@ -608,6 +634,8 @@
 (define definition? (lambda (term)
                       (equal?  term 'define) ))
 
+(define definition (signature (predicate definition?)))
+
 ;; ======================= DATATYPE DEFINITIONS (TYPED LANG) ===============
 
 (define-record alist
@@ -632,7 +660,17 @@
          (equal? 'lambda (first term))
          )))
 
+; Prädikat für Abstraktionen
+(: more-abstraction? (any -> boolean))
+(define more-abstraction?
+  (lambda (term)
+    (and (cons? term)
+         (equal? 'fn (first term))
+         )))
+
 (define abstraction (signature (predicate abstraction?)))
+
+(define more-abstraction (signature (predicate more-abstraction?)))
 
 ; Prädikat für primitive Applikationen
 (: primitive-application? (any -> boolean))
@@ -647,8 +685,10 @@
 (define fun-application?
   (lambda (term)
     (and (cons? term)
-         (equal? (first term) 'app-fun)
+         (equal? (first term) 'apply-fun)
          )))
+
+(define fun-application (signature (predicate fun-application?)))
 
 ; Prädikat für where Bedingungen
 (: where-condition? (any -> boolean))
@@ -658,7 +698,7 @@
          (equal? (first term) 'cond-branch)
          )))
 
-
+(define where-condition (signature (predicate  where-condition?)))
 
 
 
@@ -792,6 +832,7 @@
       (and (symbol? token)
            (not (equal? token 'define))
            (not (equal? token 'lambda))
+               (not (equal? token 'fn))
            (not (equal? token 'app-fun))
            (not (primitive? token))
            (not (equal? token 'cond-branch))

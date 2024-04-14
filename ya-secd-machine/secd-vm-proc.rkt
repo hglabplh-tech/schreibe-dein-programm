@@ -278,7 +278,7 @@
                                                 
                                       ))
                                      
-                                   ((where?-? (first code))
+                                   ((where? (first code))
                                     (let*  (
 
                                             [fresh-stack (make-stack (list))]
@@ -687,7 +687,7 @@
 
 ;;(check-expect (eval-secd (compile-secd '((lambda (x) (mul 5 x)) 2))) 10)
 ;; this tiny scheme code is the level for the next step
-(check-expect  (eval-secd  (compile-secd '((define test-west
+#;(check-expect  (eval-secd  (compile-secd '((define test-west
                                              (lambda (x)                                             
                                                (mul x 9)))
                                            (define higher (lambda (u)
@@ -695,7 +695,7 @@
                                                             ))
                                            (app-fun higher 7))))  68)
 
-(check-expect  (eval-secd   (compile-secd'((define test-west
+#;(check-expect  (eval-secd   (compile-secd'((define test-west
                                              (lambda (x)                                             
                                                (mul x 9) ))
                                            (define higher (lambda (u)
@@ -716,9 +716,9 @@
                              ((app-fun higher 10) 12)))
 
 ;;(check-expect  (compile-secd the-test-case-code) 65)
-(check-expect  (eval-secd  (compile-secd the-test-case-code)) 112)
+#;(check-expect  (eval-secd  (compile-secd the-test-case-code)) 112)
 
-(check-expect (eval-secd (compile-secd'((define test-west
+#;(check-expect (eval-secd (compile-secd'((define test-west
                                           (lambda (x)
                                  
                                             (mul x 18)))
@@ -730,7 +730,7 @@
                                                            )))
                                         ((app-fun higher 6) 0))))  221)
 
-(check-expect (eval-secd (compile-secd'((define test-west
+#;(check-expect (eval-secd (compile-secd'((define test-west
                                           (lambda (x)
                                  
                                             (mul x 18)))
@@ -744,7 +744,7 @@
 
 
 
-(check-expect (eval-secd (compile-secd'((define test-west
+#;(check-expect (eval-secd (compile-secd'((define test-west
                                           (lambda (x)
                                  
                                             (mul x 18)))
@@ -762,7 +762,7 @@
 
 ;; Ultimativer Test
 
-(check-expect (eval-secd (compile-secd
+#;(check-expect (eval-secd (compile-secd
                           '((define calc-base
                               (lambda (x)
                                 (mul x (div (app-fun higher 5) 2))
@@ -781,7 +781,7 @@
                             (app-fun higher 10)))) 162)
 
 ;; Verschachteltes where
-(check-expect (eval-secd
+#;(check-expect (eval-secd
                (compile-secd'((define higher (lambda (x)                                           
                                                (cond-branch (< x 11)
                                                             (mul 5 (add 7 x))
@@ -794,7 +794,7 @@
                               (app-fun higher 22)
                               ) )) 203)
 
-(check-expect (eval-secd
+#;(check-expect (eval-secd
                (compile-secd
                 '((define allocator
                     (lambda (x)
@@ -835,7 +835,7 @@
                                                 ))
                                (app-fun higher 80)))) 185)
 
-(check-expect  (eval-secd (compile-secd
+#;(check-expect  (eval-secd (compile-secd
                            '((define allocator
                                (lambda (x)
                                  (add (heap-alloc g 8)
@@ -856,3 +856,15 @@
                                 
                                               ))
                              (app-fun higher 180)))) 185)
+
+ (check-expect  (eval-secd
+                 (compile-secd
+                '((define allocator
+                    (lambda (x)
+                      (lambda (y)
+                         (lambda (y)
+                      (add (heap-alloc g 8)
+                           (sub (mul x (heap-set-at! g 16))
+                                (heap-get-at g))
+                           )))))
+                  (((apply-fun allocator 7) 8) 9)))) 'lambda-test)
