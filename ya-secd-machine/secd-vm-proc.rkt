@@ -66,28 +66,18 @@
                                    ((abst? (first code))
                                     (begin
                                       (print-stack-env-code op-stack fun-stack env code  "debug call abstraction")
-                                      (let* ([param-var  (abst-variable (first code))]
-                                      
+                                      (let* ([param-var  (abst-variable (first code))]                                     
                                               
                                              [the-closure  (make-closure
                                                             param-var
                                                             (abst-code (first code))                                                                           
                                                             env)])
                                         (begin
-                                          (write-object-nl param-var)
-                                          (write-string "there is NO closure ON stack.....")
-                                          (op-stack 'push!  (make-stack-element 'param base? param-var))
-                                          (write-string "push closure") 
+                                                                          
                                           (fun-stack 'push! the-closure)
-                                          (fun-stack 'print-stack)
-                                          (write-object-nl "temp stack content")
-                                          (temp-stack 'print-stack)                                  
-                            
-                                         
-                                        
-                                          (write-object-nl "temp stack content")
-                                          (temp-stack 'print-stack)
-                                          (op-stack 'print-stack)
+                                          (fun-stack 'print-stack)                               
+                                          (op-stack 'print-stack)                               
+                                   
                                           (make-secd
                                            op-stack
                                            fun-stack
@@ -368,19 +358,19 @@
                                          (rest code)
                                          dump
                                          heap-inst
-                                         ))))
-                                  
-                                       
-                                  
+                                         ))))                 
                                   
                                
 
                                    ((app-fun? (first code))                             
-                                    (process-fun-app  state (first code)
+                                    (process-fun-app  state
                                                       )
                                     )
                              
                                    ((ap? (first code))
+                                    (begin
+                                    (debug-snap-stack op-stack "Operating Stack")
+                                     (debug-snap-stack fun-stack "Function Stack")
                                     (let ([parameter-binding (stack-element-value (op-stack 'pop!))]                                   
                                           [the-closure (fun-stack  'pop!)])
                                       
@@ -423,7 +413,7 @@
                                                           (make-frame op-stack fun-stack env (rest code))
                                                           dump)
                                                          heap-inst)
-                                            ) ) )))
+                                            ) ) ))))
                    
                                    ((tailap? (first code)) ;; nach stack und environment sehen
                                     (let ([closure (fun-stack 'pop!)]
@@ -515,9 +505,25 @@
             ))
         (make-stack (list)
         ))))
+(define def-closure
+         (lambda (env dump op-stack  fun-stack fun-ref)
+          (let* ( [the-abst-code  (lookup-environment
+                               env
+                               dump
+                               fun-ref)])
+             (if (or (empty? the-abst-code) (not (abst? the-abst-code)))
+                                (fun-stack 'pop!)
+                                (begin
+                                      (op-stack 'pop!)
+                               (make-closure
+                             (abst-variable (first  the-abst-code))
+                             (abst-code (first  the-abst-code))                                                              
+                             env)                           
+           )))))
+
 
 (define process-fun-app
-  (lambda (secd-state fun-app-rec)
+  (lambda (secd-state)
     (define code (secd-code secd-state))
     (define env (secd-environment  secd-state))
     (define op-stack (secd-stack secd-state))
@@ -525,63 +531,41 @@
     (define dump (secd-dump secd-state))
     (define heap-inst (secd-heap secd-state))
     (begin
-      (let*  ([inner-code (app-fun-code fun-app-rec)]
-              [bind-var (app-fun-variable fun-app-rec)]
-              [the-abst-code  (lookup-environment
-                               env
-                               dump
-                               bind-var)]
-              [the-closure  (make-closure
-                             (abst-variable (first  the-abst-code))
-                             (abst-code (first  the-abst-code))                                                                
-                             env)]                           
-              [call-state (make-secd op-stack fun-stack env inner-code dump heap-inst)]
-              [new-state (really-process call-state)]
-            
-              )
-        (begin
+      (write-object-nl  "Enter app fun ->")
+      (debug-snap-env env "start processing")
+        (debug-snap-stack op-stack "start processing")
+      (let*  (
+              [bind-var (stack-element-value (op-stack 'peekit))]
+               [the-closure (def-closure env dump op-stack fun-stack bind-var)]
+               [extended-env (extend-environment
+                                                            env
+                                                           (closure-variable the-closure)                                                  
+                                                           (stack-element-value )(op-stack 'pop!))]
            
-          (debug-to-print-cl  the-closure "app-fun case")
-          (write-newline)
-          (write-string "after lookup:  ")
-          (if (empty? the-closure)
-              (write-string "no binding found")
-              (write-string "binding found!!!!") 
-                                     
-              )
-          (write-newline)
-          (let* ([parameter-binding  (stack-element-value (op-stack 'pop!))]
-                 [parm-name (if (abst? (first the-abst-code))
-                                (abst-variable (first the-abst-code))
-                                'unknown)]
-                 [extended-env  (extend-environment
-                                 (closure-environment the-closure)
-                                 parm-name                                                          
-                                 parameter-binding)]
-                 [fresh-stack (make-stack (list))])
-            (begin
-              (op-stack 'print-stack)
+              [secd-state (if (abst?(first (closure-code the-closure)))
+                   (begin
+                     ;;(op-stack  'push! (new-stack-element 'app  bind-var))
+                   ;;  (fun-stack  'push! (closure-code the-closure))
+                     (let ([next-secd-state
+                            (make-secd
+                             op-stack
+                             fun-stack
+                             extended-env
+                             (closure-code the-closure)
+                             dump
+                             heap-inst)])
+                           (really-process next-secd-state)))
+                       secd-state)]   
+                [secd-state   (if  (empty? (secd-code secd-state))
+                  (leave-context op-stack fun-stack dump heap-inst)              
+                 (process-fun-app secd-state)
+                 )])
+        secd-state))))
 
-              ( cond
-                 ((> (op-stack 'size) 0)
-                  (fresh-stack 'push! (op-stack 'peekit))) ;;;peekit before that
-                                            
-                 (else  list))
-                                     
-              (make-secd
-               fresh-stack 
-               (make-stack (list))
-               extended-env                                                                                                          
-               (closure-code the-closure)
-               (cons
-                (make-frame op-stack fun-stack env (rest code))
-                dump)
-               heap-inst
-               )
-                                
-                               
-                             
-              )))))))
+                     
+                   
+                     
+     
     
 
 (define do-is
@@ -867,4 +851,4 @@
                            (sub (mul x (heap-set-at! g 16))
                                 (heap-get-at g))
                            )))))
-                  (((apply-fun allocator 7) 8) 9)))) 'lambda-test)
+                  (apply-fun allocator 7 8 9)))) 'lambda-test)

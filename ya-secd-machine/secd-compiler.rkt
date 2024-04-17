@@ -35,11 +35,12 @@
                                (first (rest (rest term))))              
                               )))
       
-      ((fun-application?  term)
-       (list (make-app-fun (first (rest term))
-                           (term->machine-code
-                            (first (rest (rest term))))              
-                           )))
+        ((fun-application? term)
+         (append
+            (append-lists
+         (map term->machine-code/t (reverse (rest term))))
+            (list (make-app-fun))
+        )) 
       
       ((begin-it?  term)
        (list (make-code-block 
@@ -121,7 +122,7 @@
              ;;    (write-string (symbol->string params ))
              (more-params (rest-or-empty params)
                           abstract-code
-                          0 (list abstract-code))))))
+                          0  abstract-code)))))
       
       
       
@@ -159,13 +160,15 @@
        (list (make-define-def (first (rest term))
                               (term->machine-code/t
                                (first (rest (rest term))))           
-                              )))      
-     
-      ((fun-application?  term)
-       (list (make-app-fun (first (rest term))
-                           (term->machine-code/t
-                            (first (rest (rest term))))              
-                           )))
+                              )))
+      
+      ((fun-application? term)
+         (append
+            (append-lists
+         (map term->machine-code/t (reverse (rest term))))
+            (list (make-app-fun))
+        )) 
+      
          
       ((begin-it?  term)
        (list (make-code-block 
@@ -252,7 +255,7 @@
              ;;    (write-string (symbol->string params ))
              (more-params (rest-or-empty params)
                           abstract-code
-                          0 (list abstract-code))))))
+                          0  abstract-code)))))
       
       
       ((base? term)
@@ -290,11 +293,12 @@
                                (first (rest (rest term))))
                               )))
      
-      ((fun-application?  term)
-       (list (make-app-fun (first (rest term))
-                           (term->machine-code/t
-                            (first (rest (rest term))))              
-                           )))
+        ((fun-application? term)
+         (append
+            (append-lists
+         (map term->machine-code/t (reverse (rest term))))
+            (list (make-app-fun))
+        )) 
 
       ((begin-it?  term)
        (list (make-code-block 
@@ -379,7 +383,7 @@
              ;;    (write-string (symbol->string params ))
              (more-params (rest-or-empty params)
                           abstract-code
-                          0 (list abstract-code))))))
+                          0 abstract-code)))))
       
       ((base? term)  (list (make-push! (list term) )))
  
@@ -418,7 +422,7 @@
                (let* ([next-abst  (make-abst
                                    (eval-param reverted-params)
                                    first-abst)]
-                      [res (append (list next-abst))])          
+                      [res next-abst])          
                  (append (more-params (rest reverted-params)
                               next-abst (+ count 1)  res              
                )))))))
@@ -675,4 +679,4 @@
                            (sub (mul x (heap-set-at! g 16))
                                 (heap-get-at g))
                            )))))
-                  (((apply-fun allocator 7) 8) 9))) 'lambda-test)
+                  (apply-fun allocator 7 8 9))) 'lambda-test)

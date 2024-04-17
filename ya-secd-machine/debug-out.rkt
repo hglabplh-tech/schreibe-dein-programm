@@ -130,11 +130,7 @@
   (lambda (app-fun-rec message)
     (begin
       (write-object-nl message)
-      (debug-print "------ Begin Function Application --------------")
-      (write-newline)
-      (debug-print (app-fun-variable app-fun-rec))
-      (write-newline)     
-      (debug-print "-------- End Function Application --------------")
+     
       )))
 
 (define debug-to-print-abst

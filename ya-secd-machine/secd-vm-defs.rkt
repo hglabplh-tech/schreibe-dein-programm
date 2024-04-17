@@ -108,8 +108,8 @@
          app-fun
          app-fun?
          make-app-fun
-         app-fun-variable
-         app-fun-code
+       ;;  app-fun-variable
+        ;; app-fun-code
          var-symbol?       
          stack-element
          make-stack-element
@@ -444,12 +444,11 @@
 
 ; Eine Instruktion für eine Funktions Applikation hat folgende
 ; Eigenschaften:
-; - Bezeichner
-; - Stelligkeit
+
 (define-record app-fun
-  make-app-fun app-fun?
-  (app-fun-variable var-symbol)
-  (app-fun-code machine-code))
+  make-app-fun app-fun?)
+ ;; (app-fun-variable var-symbol)
+  ;;(app-fun-code machine-code))
 
 ;; Diese Struktur dient zur Darstellung eines "Conditional Branch"
 (define-record where
