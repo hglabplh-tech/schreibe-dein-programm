@@ -38,7 +38,7 @@
         ((fun-application? term)
          (append
             (append-lists
-         (map term->machine-code/t (reverse (rest term))))
+         (map term->machine-code/t  (reverse(rest term))))
             (list (make-app-fun))
         )) 
       
@@ -111,18 +111,15 @@
        (begin
          (write-newline)
          ;; (write-string (symbol->string term ))
-         (let* ([params (reverse (smart-first (rest term)))]
+         (let* ([params (smart-first(rest term))]
+                [params (reverse params)]
                 [abstract-code  (make-abst
                                  (eval-param params)                      ;; look for the a´bstraction params
-                                 (term->machine-code
-                                  (smart-first
-                                   (smart-rest
-                                    (smart-rest term)))))])
+                                 (abstraction-code-collect term))])
            (begin
              ;;    (write-string (symbol->string params ))
-             (more-params (rest-or-empty params)
-                          abstract-code
-                          0  abstract-code)))))
+             (schoenfinkel-proc (rest-or-empty params)
+                          abstract-code (list abstract-code))))))
       
       
       
@@ -165,7 +162,7 @@
       ((fun-application? term)
          (append
             (append-lists
-         (map term->machine-code/t (reverse (rest term))))
+         (map term->machine-code/t  (reverse (rest term))))
             (list (make-app-fun))
         )) 
       
@@ -244,18 +241,15 @@
        (begin
          (write-newline)
          ;; (write-string (symbol->string term ))
-         (let* ([params (reverse (smart-first (rest term)))]
+         (let* ([params (smart-first (rest term))]
+                [params (reverse params)]
                 [abstract-code  (make-abst
                                  (eval-param params)                      ;; look for the a´bstraction params
-                                 (term->machine-code/t-t
-                                  (smart-first
-                                   (smart-rest
-                                    (smart-rest term)))))])
+                                 (abstraction-code-collect term))])
            (begin
              ;;    (write-string (symbol->string params ))
-             (more-params (rest-or-empty params)
-                          abstract-code
-                          0  abstract-code)))))
+             (schoenfinkel-proc (rest-or-empty params)
+                          abstract-code (list abstract-code))))))
       
       
       ((base? term)
@@ -296,9 +290,9 @@
         ((fun-application? term)
          (append
             (append-lists
-         (map term->machine-code/t (reverse (rest term))))
+         (map term->machine-code/t  (reverse(rest term))))
             (list (make-app-fun))
-        )) 
+        ))
 
       ((begin-it?  term)
        (list (make-code-block 
@@ -368,22 +362,19 @@
 
   
 
-     ((abstraction? term)
+       ((abstraction? term)
        (begin
          (write-newline)
          ;; (write-string (symbol->string term ))
-         (let* ([params (reverse (smart-first (rest term)))]
+         (let* ([params (smart-first (rest term))]
+                [params (reverse params)]
                 [abstract-code  (make-abst
                                  (eval-param params)                      ;; look for the a´bstraction params
-                                 (term->machine-code/t-t
-                                  (smart-first
-                                   (smart-rest
-                                    (smart-rest term)))))])
+                                 (abstraction-code-collect term))])
            (begin
              ;;    (write-string (symbol->string params ))
-             (more-params (rest-or-empty params)
-                          abstract-code
-                          0 abstract-code)))))
+             (schoenfinkel-proc (rest-or-empty params)
+                          abstract-code (list abstract-code))))))
       
       ((base? term)  (list (make-push! (list term) )))
  
@@ -412,20 +403,23 @@
                    ( term->machine-code/t))
     ))
 
-(define more-params
-  (lambda (params first-abst count result)
-    (let* ([reverted-params  params]
-           )
-  
-      (if (and (empty? reverted-params))
-          (list result)
-               (let* ([next-abst  (make-abst
-                                   (eval-param reverted-params)
-                                   first-abst)]
-                      [res next-abst])          
-                 (append (more-params (rest reverted-params)
-                              next-abst (+ count 1)  res              
-               )))))))
+(define abstraction-code-collect
+  (lambda (term)
+    (term->machine-code (smart-first
+                         (smart-rest
+                          (smart-rest term))))
+    ))
+
+(define schoenfinkel-proc
+  (lambda (params first-abst result) 
+      (if (and (empty? params))
+         result
+               (let* ([next-abst (make-abst
+                                  (eval-param params)
+                                  (append (list first-abst) (list (make-ap))))]
+                        [res (list next-abst)])  
+
+                (append (schoenfinkel-proc (rest params)  next-abst  res))))))
 
 ;; process input
 ; Aus Term SECD-Anfangszustand machen
@@ -676,7 +670,22 @@
                       (lambda (y)
                          (lambda (y)
                       (add (heap-alloc g 8)
-                           (sub (mul x (heap-set-at! g 16))
-                                (heap-get-at g))
-                           )))))
+                          (sub (add x y) z)))
+                           )))
                   (apply-fun allocator 7 8 9))) 'lambda-test)
+
+ (check-expect  (compile-secd
+                '((define allocator
+                    ((lambda (x)
+                      ((lambda (y)
+                         ((lambda (z)
+                      (add (heap-alloc g 8)
+                           (sub (add x y) z)
+                           ))7 )) 8)) 9))))
+                   'lambda-test-2)
+
+(check-expect  (compile-secd
+                '((define allocator
+                    (lambda (x y z)                      
+                     (sub (add x y) z)))
+                  (apply-fun allocator 7 8 9))) 'lambda-test-2)

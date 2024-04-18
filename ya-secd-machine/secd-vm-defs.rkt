@@ -530,14 +530,16 @@
 (define base?
   (lambda (term)
     (or (boolean? term)
-        (char-data?  term)
-        (byte-data?  term)
+        (char?  term)
+        (byte?  term)
         (string? term)
         (alist? term)
-        (is? term)
         (proc-fun? term)
-        (number? term))))
+        (number? term)
+        (integer? term)
+        )))
         
+
 
 ;; Base Signatur
 (define base (signature (predicate base?)))
@@ -635,8 +637,9 @@
 
 (define definition (signature (predicate definition?)))
 
-;; ======================= DATATYPE DEFINITIONS (TYPED LANG) ===============
+;; ======================= DATENTYP DEFINITIONEN (TYPED LANGUAGE) ===============
 
+;; Hier die Prädikate um abzufragen mit welchem Typ wir ees zu tun haben
 (define-record alist
   make-alist alist?
   (alist-value base-list-type))
@@ -648,6 +651,93 @@
          (equal? 'alist (first term))
           )))
   (define base-list-type (signature (list-of base?)))
+ (define alist-def (signature (predicate alist-def?)))
+
+(define-record prim-type
+  make-prim-type prim-type?
+  (prim-type-type natural)
+  (prim-type-pred ask-type))
+
+(define ask-type (signature (mixed alist-def is-boolean is-integer)))
+(: is-boolean? (any -> boolean))
+
+(define is-boolean?
+  (lambda (term)
+    ((and (cons? term)
+          (equal? 'boolean? (first term))))))
+
+
+(define is-boolean (signature (predicate is-boolean?)))
+
+(: is-integer? (any -> boolean))
+
+(define is-integer?
+  (lambda (term)
+    ((and (cons? term)
+          (equal? 'integer? (first term))))))
+
+
+(define is-integer (signature (predicate is-integer?)))
+
+(: is-number? (any -> boolean))
+
+(define is-number?
+  (lambda (term)
+    ((and (cons? term)
+          (equal? 'number? (first term))))))
+
+(define is-number (signature (predicate is-number?)))
+
+(: is-string? (any -> boolean))
+
+(define is-string?
+  (lambda (term)
+    ((and (cons? term)
+          (equal? 'string? (first term))))))
+
+(define is-string (signature (predicate is-string?)))
+
+(: is-string? (any -> boolean))
+
+(define is-char?
+  (lambda (term)
+    ((and (cons? term)
+          (equal? 'char? (first term))))))
+
+(define is-char (signature (predicate is-char?)))
+
+(: is-byte? (any -> boolean))
+
+(define is-byte?
+  (lambda (term)
+    ((and (cons? term)
+          (equal? 'byte? (first term))))))
+
+(define is-byte (signature (predicate is-byte?)))
+
+(: is-proc-fun? (any -> boolean))
+
+(define is-proc-fun?
+  (lambda (term)
+    ((and (cons? term)
+          (equal? 'proc-fun? (first term))))))
+
+(define is-proc-fun (signature (predicate is-proc-fun?)))
+
+
+
+;; hier die Definitionen zur Typ-Deklaration statische Typisierung
+
+(define-record data-type-decl
+  make-data-type-decl data-type-decl?
+  (data-type-decl-type-id natural)
+  (datatype-decl-type-name string)
+  (data-type-decl-len-var boolean)
+  (data-type-decl-length natural)
+  )
+
+
+
 ;; ======================= DATATYPE DEFINITIONS (TYPED LANG) ===============
 
 
