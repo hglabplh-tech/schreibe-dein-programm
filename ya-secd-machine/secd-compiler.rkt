@@ -433,7 +433,7 @@
                           (smart-rest term)))
     ))
 
-;; Definition für eine Abstraktiuon die mehrere Parameter hat
+;; Definition für eine Abstraktion die mehrere Parameter hat
 ;; die Parameter / Bindungen werden so heruntergebrochen, dass die
 ;; ineinander Vrerschachtelten Abstraktionen jeweil wieder nur einen Parameter haben
 ;; Beispiel:
