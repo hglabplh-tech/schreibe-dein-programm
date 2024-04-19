@@ -841,7 +841,27 @@
                                                 ))
                                (app-fun higher 80)))) 185)
 
-#;(check-expect  (eval-secd (compile-secd
+
+(check-expect  (eval-secd
+                (compile-secd
+                 '((define allocator
+                     (lambda (x)
+                       (lambda (y)
+                         (lambda (y)
+                           (add (heap-alloc g 8)
+                                (sub (mul x (heap-set-at! g 16))
+                                     (heap-get-at g))
+                                )))))
+                   (apply-fun allocator 7 8 9)))) 8)
+
+(check-expect  (eval-secd
+                (compile-secd
+                '((define allocator
+                    (lambda (x y z)                      
+                     (sub (add x y) z)))                 
+                   (apply-fun allocator 7 8 9)))) 6)
+
+(check-expect  (eval-secd (compile-secd
                              '((define allocator
                                  (lambda (x)
                                    (add (heap-alloc g 8)
@@ -862,22 +882,3 @@
                                 
                                                 ))
                                (app-fun higher 180)))) 185)
-
-(check-expect  (eval-secd
-                (compile-secd
-                 '((define allocator
-                     (lambda (x)
-                       (lambda (y)
-                         (lambda (y)
-                           (add (heap-alloc g 8)
-                                (sub (mul x (heap-set-at! g 16))
-                                     (heap-get-at g))
-                                )))))
-                   (apply-fun allocator 7 8 9)))) 8)
-
-(check-expect  (eval-secd
-                (compile-secd
-                '((define allocator
-                    (lambda (x y z)                      
-                     (sub (add x y) z)))                 
-                   (apply-fun allocator 7 8 9)))) 'lambda-test4)

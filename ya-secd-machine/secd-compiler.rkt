@@ -1,5 +1,15 @@
 #lang deinprogramm/sdp/advanced
-(require ;;lang/htdp-advanced
+
+;; Diese Definitions Datei implementiert den Compiler zu  unserer SECD(H)
+;; VM ... der Gedanke hinter diesen Definitionen ist es Code zu übersetzen
+;;der als Basis für Compiler dient die auf dem Lambda Kalkül aufbauen.
+;; Ein wesentlicher Aspekt ist zusätzlich, dass der Teil einer Sprache bei dem tatsächlich etwas
+;; direkt in 'Machine/Byte" - Code übersetzt.... das ist desswegn attraktiv weil
+;; damit bei einer neuen Hardware oder VM weniger Code bei gleichbleibender Schnittstelle
+;; ausgtauscht werden muss...
+;;
+
+(require 
   "secd-vm-defs.rkt"
   "stack.rkt"
   "operations.rkt"
@@ -13,41 +23,50 @@
   (only-in     racket/base
                datum->syntax)
   )
-;; defiitions for the machine and the pseudo-code
+;; Hier die Definitionen, welche nach außen gereicht werden
+
 (provide compile-secd)
-; die Elemente einer Liste von Listen aneinanderhängen
+
+; Dfinition um die Elemente einer Liste von Listen aneinanderhängen
+
 (: append-lists ((list-of (list-of %a)) -> (list-of %a)))
 (define append-lists
   (lambda (list)
     (fold '() append list)))
 
-;; The STACK
 
-(define fun-app-flag #f)
+;; Hier wird ein Term in Maschinencode umgesetzt.
+;; TODO : Weelche Rolle spielt die Art der Implementierung für die Erkennung
+; einer Endrekursion
+
 (: term->machine-code (term -> machine-code))
 (define term->machine-code ;; spielt hier diee Reihenfolge der cases eine Rolle?
   (lambda (term)
     (cond
-    
+
+      ;; Umsetzung einer 'top level' definition (define)
       ((definition? (smart-first term))
        (list (make-define-def (first (rest term))
                               (term->machine-code
                                (first (rest (rest term))))              
                               )))
-      
+
+      ;; Umsetzung des Aufrufs einer nicht anonymen Closure 
         ((fun-application? term)
          (append
             (append-lists
          (map term->machine-code/t  (reverse(rest term))))
             (list (make-app-fun))
         )) 
-      
+
+      ;; hier wird ein 'Codeblock' übersetzt // entspricht begin in Scheme
       ((begin-it?  term)
        (list (make-code-block 
               (term->machine-code
                (rest term))))              
        )
-     
+
+      ;; Umsetzung eines 'if' -> Konditionale Verzweigung
       ((where-condition? term)       
        (list (make-where
               (term->machine-code
@@ -59,13 +78,14 @@
                       )))))
 
    
-
+      ;; Umsetzung der Einleitung eines (cond also wie ein case / switch...
       ((is-where? term)      
        (append
         (list (make-conditions  (map 
-                                 term->machine-code 
+                                 term->machine-code
                                  (rest term))))))
 
+      ;; Umsetzung einer Verzweigung innerhalb eines (cond 
       ((is? term)     
        (list (make-single-cond
               (term->machine-code
@@ -74,6 +94,8 @@
                (term->machine-code
                 (first (rest (rest term)))) (list (make-break))))))
 
+      ;; Umsetzung der Allokation (Instanzierung) einer heyp Variable#n
+      ;;Dynamische Bindung
       ((heap-allocator? term)
        (append           
         (append-lists
@@ -81,7 +103,7 @@
         (list (make-heap-alloc))))
             
             
-     
+     ;;Zuweisung (set! )  einer Heap-Variablen
       ((heap-assignment? term)
        (append           
         (append-lists
@@ -89,24 +111,27 @@
         (list (make-heap-set-at!))))
      
 
+      ;; holen eines Wertes einer dynamisch gebunden Heap-Variablen
       ((heap-getter? term)
        (append          
         (append-lists
          (map term->machine-code/t (rest term)))            
         (list (make-heap-get-at))))
 
+      ;; Hier wird der Wert eines Symbol auf den Stack gelegt...
+      ;; Diese Symbol gilt als Identifier zu einer lexikal gebundenen Variablen
       ((var-symbol? term) (list (make-push! (list term) )))
-       
+
+      ;; Hier wird aus einer Abstraktion eine Closure instantiert und dann unmittelbar
+      ;;  angesteuert
       ((application? term)
        (let ([result (append (term->machine-code (first term))
                              (append (term->machine-code (smart-first (smart-rest term)))
                                      (list (make-tailap ))))])       
-         result))
-         
+         result))      
 
-    
- 
-
+      ;; definition einer Logik die später in einer Closure landet die Definition
+      ;; einer Abstraktion ist statisch
       ((abstraction? term)
        (begin
          (write-newline)
@@ -115,16 +140,19 @@
                 [params (reverse params)]
                 [abstract-code  (make-abst
                                  (eval-param params)                      ;; look for the a´bstraction params
-                                 (abstraction-code-collect term))])
+                                 (abstraction-code-collect
+                                  term->machine-code term))])
            (begin
              ;;    (write-string (symbol->string params ))
              (schoenfinkel-proc (rest-or-empty params)
                           abstract-code (list abstract-code))))))
       
       
-      
+      ;; Hir wird ein 'konstanter' Wert auf den Stack geschoben
       ((base? term)  (list (make-push! (list term) ))) 
-  
+
+      ;; hier wird eine primitive Operation wie z.B.: mul sub add zur Ausführung
+      ;; umgesetzt
       ((primitive-application? term)
        (append
         (append-lists
@@ -245,7 +273,8 @@
                 [params (reverse params)]
                 [abstract-code  (make-abst
                                  (eval-param params)                      ;; look for the a´bstraction params
-                                 (abstraction-code-collect term))])
+                                 (abstraction-code-collect
+                                  term->machine-code/t-t term))])
            (begin
              ;;    (write-string (symbol->string params ))
              (schoenfinkel-proc (rest-or-empty params)
@@ -370,9 +399,9 @@
                 [params (reverse params)]
                 [abstract-code  (make-abst
                                  (eval-param params)                      ;; look for the a´bstraction params
-                                 (abstraction-code-collect term))])
+                                 (abstraction-code-collect term->machine-code/t-t term))])
            (begin
-             ;;    (write-string (symbol->string params ))
+            
              (schoenfinkel-proc (rest-or-empty params)
                           abstract-code (list abstract-code))))))
       
@@ -396,19 +425,23 @@
        )
       )))
 
-
-(define new-abstract
-  (lambda (sedc closure-sym)
-    ( make-closure closure-sym
-                   ( term->machine-code/t))
-    ))
-
+;; Hier wird der Code einer Abstraktion aufgesammelt
 (define abstraction-code-collect
-  (lambda (term)
-    (term->machine-code (smart-first
+  (lambda (term->code term)
+    (term->code ;;(smart-first ;;;; ????? prüfen
                          (smart-rest
-                          (smart-rest term))))
+                          (smart-rest term)))
     ))
+
+;; Definition für eine Abstraktiuon die mehrere Parameter hat
+;; die Parameter / Bindungen werden so heruntergebrochen, dass die
+;; ineinander Vrerschachtelten Abstraktionen jeweil wieder nur einen Parameter haben
+;; Beispiel:
+;; (lambda (x y z) code)
+;; wird zu ->
+;; (lambda (x)
+;;   (lambda (y)
+;;     (lambda (z) code)))
 
 (define schoenfinkel-proc
   (lambda (params first-abst result) 
@@ -421,7 +454,7 @@
 
                 (append (schoenfinkel-proc (rest params)  next-abst  res))))))
 
-;; process input
+
 ; Aus Term SECD-Anfangszustand machen
 (: inject-secd (term -> secd))
 (define inject-secd
@@ -443,7 +476,7 @@
 
 ;;(check-expect (compile-secd '(+ 1 2)) 3)
 ;;(check-expect (compile-secd '(((lambda (x) (lambda (y) (+ x y))) 1) 2)) 3)
-(define compile-stack (make-stack (list)))
+(define compile-stack (make-stack (list))) ;; Brauchen wir den noch
 (define compile-secd
   (lambda (term)    
     (define value 
@@ -481,211 +514,3 @@
         (compile-secd code-section)      
         ))))
 
-;; Diese Audrücke müssen erneut geprüft werden
-;;(check-expect (compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2)) 3);; this works now
-;;(check-expect (compile-secd '((lambda (x) (mul 5 x)) 2)) 10)
-;;(check-expect (compile-secd '(lambda (x) (lambda (y) (div 120 (mul y  (add x y)))) 1) 2) 20)
-;; FIXME have to fix multiple nested expressions
-
-;; Ein kleinerAusblick auf die nächste mögliche Funktionalität
-#;(check-expect (compile-secd '(define test-add3 (lambda (x)
-                                                   (lambda (y)
-                                                     (add x y)           
-                                                     )))) 7)
-
-#;(check-expect (compile-secd '(define mul-add3 (lambda (y)
-                                                  (lambda(fun)
-                                                    (mul y ((test-add3 y) 9)))))) 8)
-
-;; hier mussnoch ((fun arg) arg2)  abgedeckt werden
-#;(check-expect (compile-secd'((define test-west
-                                 (lambda (x)
-                                 
-                                   (mul x 18)))
-                               (define higher (lambda (u)
-                                                (lambda ()
-                                                  (cond-branch (== u 17)
-                                                               (add 5 (apply-fun test-west u))
-                                                               (add 5 (apply-fun test-west 12)))                                               
-                                                  )))
-                               ((apply-fun higher 6)))) 42) ;
-
-#;(check-expect (compile-secd'((define test-west
-                                 (lambda (x)                                 
-                                   (mul x 18)))
-                               (define higher (lambda (u)
-                                                (lambda ()
-                                                  (cond-branch (< u 17)
-                                                               (add 5 (apply-fun test-west u))
-                                                               (add 5 ((higher 10))))
-                                                  )))
-                               ((apply-fun higher 10)))) 185)
-
-;; Einfacher Test für cond-branch
-(check-expect
- (compile-secd'((define higher (lambda (x)
-                                 (lambda ()
-                                   (cond-branch (< x 11)
-                                                (mul 5 (add 7 x))
-                                                (add 5 ((apply-fun higher 10))))
-                                   )))
-                ((apply-fun higher 10))))185)
-
-
-
-
-;; Verschachteltes where
-(check-expect
- (compile-secd'((define higher (lambda (x)
-                                 (lambda ()
-                                   (cond-branch (< x 11)
-                                                (mul 5 (add 7 x))
-                                                (cond-branch (> x 20)
-                                                             (add 5 (mul 9 x))
-                                                             (add x x))
-                                                ))))
-                ((apply-fun higher 10))
-                ((apply-fun higher 19))
-                ((apply-fun higher 22))
-                ) ) 777)
-#;(check-expect  (compile-secd'((define test-west
-                                  (lambda (x)                                             
-                                    (mul x 9) ))
-                                (define higher (lambda (u)
-                                                 (add 5 (apply-fun test-west u))
-                                                 ))
-                                (apply-fun higher 11)
-                                (apply-fun higher 7) 
-                                )) 42) ;
-
-#;(check-expect  (compile-secd'((define test-west
-                                  (lambda (x)                                             
-                                    (mul x 9) ))
-                                (define higher (lambda (u)
-                                                 (add 5 (apply-fun test-west u))
-                                                 ))
-                                (apply-fun higher 10)
-                                         
-                                )) 42)
-
-#;(check-expect (compile-secd '((lambda (x) (lambda (y) (add x y) 1) 2))) 3)
-
-;; Ultimativer Test der Rekursion
-(check-expect  (compile-secd
-                '((define calc-base
-                    (lambda (x)
-                      (mul x (div ((apply-fun higher 5)) 2))
-                      ))
-                  (define test-west
-                    (lambda (x)
-                      (cond-branch (< u 9)
-                                   (mul x 18)
-                                   (add 2 (apply-fun calc-base 3)))))
-                  (define higher (lambda (u)
-                                   (lambda ()
-                                     (cond-branch (< u 9)
-                                                  (mul 5 (add 7 u))
-                                                  (add (apply-fun test-west u) ((apply-fun higher 7))))
-                                     )))
-                  ((apply-fun higher 10))))  #t)
-
-(check-expect  (compile-secd
-                '((define allocator
-                    (lambda (x)
-                      (add (heap-alloc g 8)
-                           (sub (mul x (heap-set-at! g 16))
-                                (heap-get-at g))
-                           )))
-                  (define higher (lambda (x)                                             
-                                   (cond-branch (< x 11)
-                                                (mul 8 7)
-                                                (add (apply-fun allocator 100) (apply-fun higher 10))
-                                                )))
-                  (apply-fun higher 10))) 185)
-
-(check-expect  (compile-secd
-                '((define allocator
-                    (lambda (x)
-                      (add (heap-alloc g 8)
-                           (sub (mul x (heap-set-at! g 16))
-                                (heap-get-at g))
-                           )))
-                  (define higher (lambda (x)
-                                   (code-block
-                                    (where-cond  
-                                     (is? (== x 40)
-                                          (add 3 4))
-                                     (is? (== x 80)
-                                          (sub x (apply-fun higher 10)))
-                                     (is? (< x 11)
-                                          (mul 8 7))
-                                     (is? (> x 12)
-                                          (add (apply-fun allocator 100) (apply-fun higher 10))
-                                          ))
-                                    (cond-branch (> x 1100)
-                                                 (mul 3 90)
-                                                 (add (apply-fun allocator 200) (apply-fun higher 110))
-                                                 ))
-                                   ))
-                  (apply-fun higher 10))) 185)
-
-(check-expect  (compile-secd
-                '((define allocator
-                    (lambda (x y z)
-                      (add (heap-alloc g 8)
-                           (sub (mul x (heap-set-at! g 16))
-                                (heap-get-at g))
-                           ))))) 8)
-
-(check-expect  (compile-secd
-                '((define allocator
-                    (lambda (x)
-                      ((lambda (y)
-                         ((lambda (z)
-                      (add (heap-alloc g 8)
-                           (sub (mul x (heap-set-at! g 16))
-                                (heap-get-at g))
-                           )) 9)) 116))))) 45)
-
-               (check-expect  (compile-secd
-                '((define allocator
-                    (lambda (x)
-                      (add (heap-alloc g 8)
-                           (sub (mul x (heap-set-at! g 16))
-                                (heap-get-at g))
-                           ))))) #f)
-
-       (check-expect  (compile-secd
-                '((define allocator
-                    (lambda (x)
-                      ((lambda ()
-                      (add (heap-alloc g 8)
-                           (sub (mul x (heap-set-at! g 16))
-                                (heap-get-at g))
-                           ))))))) 'last)
-
-   (check-expect  (compile-secd
-                '((define allocator
-                    (lambda (x)
-                      (lambda (y)
-                         (lambda (y)
-                      (add (heap-alloc g 8)
-                          (sub (add x y) z)))
-                           )))
-                  (apply-fun allocator 7 8 9))) 'lambda-test)
-
- (check-expect  (compile-secd
-                '((define allocator
-                    ((lambda (x)
-                      ((lambda (y)
-                         ((lambda (z)
-                      (add (heap-alloc g 8)
-                           (sub (add x y) z)
-                           ))7 )) 8)) 9))))
-                   'lambda-test-2)
-
-(check-expect  (compile-secd
-                '((define allocator
-                    (lambda (x y z)                      
-                     (sub (add x y) z)))
-                  (apply-fun allocator 7 8 9))) 'lambda-test-2)
