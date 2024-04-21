@@ -253,3 +253,29 @@
                                                  ))
                                    ))
                   (apply-fun higher 10))) 185)
+
+(check-expect  (compile-secd
+                           '((define test-num-var 25)
+                             (define test-str-var "too much trouble")
+                             (define test-boolean-var #t)
+                              (define test-byte-var #xFA)
+                             (define allocator
+                               (lambda (x)
+                                 (add (heap-alloc g 8)
+                                      (sub (mul x (heap-set-at! g 16)) ;;check this again
+                                           (heap-get-at g))
+                                      )))
+                             (define higher (lambda (x)                          
+                                              (where-cond  
+                                               (is? (== x 40)
+                                                    (add 3 4))
+                                               (is? (== x 80)
+                                                    (sub x  10))
+                                               (is? (== x 11)
+                                                    (add (apply-fun allocator 9) (mul test-num-var 7))
+                                               ))
+                                
+                                              ))
+                             (apply-fun higher 11))) 192)
+
+(check-expect  (read-analyze-compile "test-prog.secd.rkt") 6)

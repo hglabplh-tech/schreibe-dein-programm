@@ -32,7 +32,7 @@
 
           ((push!) (set! stk (append (list (car args)) stk)))
 
-           ((reverse!) (set! stk (reverse stk)))
+           ((reverse!) (set! stk (reverse stk)) (make-stack stk))
 
           ((push-swapped!) (set! stk (append (list (car stk)) (list (car args)) (cdr stk)))) ;; FIXME for first lement
 
