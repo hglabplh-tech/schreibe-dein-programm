@@ -108,8 +108,8 @@
          app-fun
          app-fun?
          make-app-fun
-       ;;  app-fun-variable
-        ;; app-fun-code
+         ;;  app-fun-variable
+         ;; app-fun-code
          var-symbol?       
          stack-element
          make-stack-element
@@ -127,48 +127,50 @@
          heap-assignment?
          heap-set-at!
          make-heap-set-at!
-      heap-set-at!?
-      heap-cell
-      heap-cell?
-      make-heap-cell
-      heap-cell-variable
-      heap-cell-init-value
-       make-heap-get-at
-       heap-allocator?
-       heap-alloc
-      heap-alloc?
-      make-heap-alloc      
-      heap-get-at
-      heap-get-at?
-      heap-getter
-       heap-getter?
-      heap
-      heap?
-      make-heap
-      heap-storage
-      extend-heap-stor
-      lookup-heap-stor
-      is-where?
-      is
-      is?
-      single-cond
-      make-single-cond
-      single-cond?
-      single-cond-what
-      single-cond-code
-      conditions
-      make-conditions
-      conditions?
-      conditions-conds
-      begin-it?
-      code-block
-      make-code-block
-      code-block?
-      code-block-code
-      break
-    break?
-    make-break
-    rest-or-empty
+         heap-set-at!?
+         heap-cell
+         heap-cell?
+         make-heap-cell
+         heap-cell-variable
+         heap-cell-init-value
+         make-heap-get-at
+         heap-allocator?
+         heap-alloc
+         heap-alloc?
+         make-heap-alloc      
+         heap-get-at
+         heap-get-at?
+         heap-getter
+         heap-getter?
+         heap
+         heap?
+         make-heap
+         heap-storage
+         extend-heap-stor
+         lookup-heap-stor
+         is-where?
+         is
+         is?
+         single-cond
+         make-single-cond
+         single-cond?
+         single-cond-what
+         single-cond-code
+         conditions
+         make-conditions
+         conditions?
+         conditions-conds
+         begin-it?
+         code-block
+         make-code-block
+         code-block?
+         code-block-code
+         break
+         the-break
+         the-break?
+         break?
+         make-break
+         rest-or-empty
          )
 
 ;;Hier der "Prozessor" Befehlssatz - als Idee
@@ -267,7 +269,7 @@
 
 (define eval-param (lambda (term)
                      (if (symbol? (smart-first term))
-                          (smart-first term)
+                         (smart-first term)
                          '++_no_parm)))
 
 
@@ -373,10 +375,10 @@
 
 ;; Definition einer Zelle die auf dem Heap liegt
 (define-record heap-cell
-              make-heap-cell heap-cell?
-               (heap-cell-variable var-symbol)
-               (heap-cell-init-value base) ;; change to typed
-              )
+  make-heap-cell heap-cell?
+  (heap-cell-variable var-symbol)
+  (heap-cell-init-value base) ;; change to typed
+  )
 
 ;; Der Heap an sich
 
@@ -447,8 +449,8 @@
 
 (define-record app-fun
   make-app-fun app-fun?)
- ;; (app-fun-variable var-symbol)
-  ;;(app-fun-code machine-code))
+;; (app-fun-variable var-symbol)
+;;(app-fun-code machine-code))
 
 ;; Diese Struktur dient zur Darstellung eines "Conditional Branch"
 (define-record where
@@ -461,12 +463,12 @@
 (: begin-it? (any -> boolean))
 (define begin-it?
   (lambda (term)
-  (and (cons? term)
-       (equal? 'code-block (first term)))))
+    (and (cons? term)
+         (equal? 'code-block (first term)))))
 
-  (define-record code-block
-      make-code-block code-block?
-      (code-block-code machine-code))
+(define-record code-block
+  make-code-block code-block?
+  (code-block-code machine-code))
 
 
 ;; Definition eines  generellen Blocks von Bedingungen
@@ -476,18 +478,27 @@
 (: is-where? (any -> boolean))
 (define is-where?
   (lambda (term)
-  (and (cons? term)
-       (equal? 'where-cond (first term)))))
+    (and (cons? term)
+         (equal? 'where-cond (first term)))))
 
 (define is-where (signature (predicate is-where?)))
 
 (: is? (any -> boolean))
 (define is?
   (lambda (term)
-  (and (cons? term)
-       (equal? 'is? (first term)))))
+    (and (cons? term)
+         (equal? 'is? (first term)))))
 
 (define is (signature (predicate is?)))
+
+(: the-break? (any -> boolean))
+(define the-break?
+  (lambda (term)
+    (and (cons? term)
+         (equal? 'break (first term)))))
+
+(define  the-break (signature (predicate the-break?)))
+
 
 
 ;; Definition für den Ausstieg aus where-cond
@@ -504,7 +515,7 @@
 (define-record conditions
   make-conditions conditions?
   (conditions-conds (list-of single-cond))
- )
+  )
 ;; define record for begin
 
 
@@ -566,28 +577,28 @@
   (lambda (primitive args)
     (begin
  
-    (cond
-      ((equal? primitive  'add)
-       (+ (first args) (first (rest args))))
-      ((equal? primitive 'sub)
-       (- (first args) (first (rest args))))
-      ((equal? primitive 'eq?)
-       (equal? (first args) (first (rest args))))
-      ((equal? primitive 'mul)
-       (* (first args) (first (rest args))))
-      ((equal? primitive 'div)
-       (/ (first args) (first (rest args))))
-       ((equal? primitive '==)
-       (equal? (first args) (first (rest args))))
-      ((equal? primitive '>)
-       (> (first args) (first (rest args))))
-      ((equal? primitive '<)
-       (< (first args) (first (rest args))))
-      ((equal? primitive '>=)
-       (>= (first args) (first (rest args))))
-      ((equal? primitive '<=)
-       (<= (first args) (first (rest args))))
-      ))))
+      (cond
+        ((equal? primitive  'add)
+         (+ (first args) (first (rest args))))
+        ((equal? primitive 'sub)
+         (- (first args) (first (rest args))))
+        ((equal? primitive 'eq?)
+         (equal? (first args) (first (rest args))))
+        ((equal? primitive 'mul)
+         (* (first args) (first (rest args))))
+        ((equal? primitive 'div)
+         (/ (first args) (first (rest args))))
+        ((equal? primitive '==)
+         (equal? (first args) (first (rest args))))
+        ((equal? primitive '>)
+         (> (first args) (first (rest args))))
+        ((equal? primitive '<)
+         (< (first args) (first (rest args))))
+        ((equal? primitive '>=)
+         (>= (first args) (first (rest args))))
+        ((equal? primitive '<=)
+         (<= (first args) (first (rest args))))
+        ))))
 
 
 
@@ -646,12 +657,12 @@
 
 (: alist-def? (any -> boolean))
 (define alist-def?
-    (lambda (term)
+  (lambda (term)
     (and (cons? term)
          (equal? 'alist (first term))
-          )))
-  (define base-list-type (signature (list-of base?)))
- (define alist-def (signature (predicate alist-def?)))
+         )))
+(define base-list-type (signature (list-of base?)))
+(define alist-def (signature (predicate alist-def?)))
 
 (define-record prim-type
   make-prim-type prim-type?
@@ -864,11 +875,11 @@
 (define env-lookup-helper (lambda (dump variable)
                             (let* ([env (frame-environment (first dump))]
                                    [binding (lookup-act-environment env variable)])                            
-                                  (if (not (empty? binding))
-                                      binding
-                                      (if (empty? (rest dump))
-                                          empty
-                                          (env-lookup-helper (rest dump) variable)
+                              (if (not (empty? binding))
+                                  binding
+                                  (if (empty? (rest dump))
+                                      empty
+                                      (env-lookup-helper (rest dump) variable)
                                       )                            
                                   ))))
 
@@ -879,12 +890,12 @@
 (define lookup-heap-stor
   (lambda (heap-instance-rec variable)
     (let ([heap-instance (heap-storage heap-instance-rec)])
-    (cond
-      ((empty? heap-instance) empty)
-      ((cons? heap-instance)
-       (if (equal? variable (heap-cell-variable (first heap-instance)))
-           (heap-cell-init-value (first heap-instance))
-           (lookup-heap-stor (rest heap-instance) variable)))))))
+      (cond
+        ((empty? heap-instance) empty)
+        ((cons? heap-instance)
+         (if (equal? variable (heap-cell-variable (first heap-instance)))
+             (heap-cell-init-value (first heap-instance))
+             (lookup-heap-stor (rest heap-instance) variable)))))))
 
 ; eine Umgebung um eine Bindung erweitern
 (: extend-heap-stor (heap symbol var-value -> heap))
@@ -894,8 +905,8 @@
   (lambda (heap-inst-rec var-symbol var-value)
     (let ([heap-inst (heap-storage heap-inst-rec)])
       
-    (make-heap (cons (make-heap-cell var-symbol var-value)      
-          (remove-heap-stor-cell heap-inst  var-symbol)))
+      (make-heap (cons (make-heap-cell var-symbol var-value)      
+                       (remove-heap-stor-cell heap-inst  var-symbol)))
       )))
 
 ;; Hilfsfunktion für obiges
@@ -921,7 +932,7 @@
       (and (symbol? token)
            (not (equal? token 'define))
            (not (equal? token 'lambda))
-               (not (equal? token 'fn))
+           (not (equal? token 'fn))
            (not (equal? token 'app-fun))
            (not (primitive? token))
            (not (equal? token 'cond-branch))

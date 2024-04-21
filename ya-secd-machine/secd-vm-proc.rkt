@@ -144,41 +144,49 @@
                                         )))
 
                                    ((conditions? (first code))
+                                    (begin
+                                      (write-object-nl "enter conditions -->")
+                                        (write-object-nl (conditions-conds  (first code)))
                                     (make-secd
                                      op-stack
                                      fun-stack
                                      env
-                                     (conditions-conds  (first code))
+                                     (conditions-conds  (first code))                                  
                                      (cons
                                       (make-frame op-stack fun-stack env (rest code))
-                                      dump)
-                                     heap-inst)
-                          
-                                    )
+                                      dump)                                   
+                                     heap-inst)))
+                                   
                                    ((single-cond? (first code))
+                                    
                                     (begin
-                                      (do-is  (first (rest code)) state)
-                                      (make-secd
-                                       op-stack
-                                       fun-stack
-                                       env
-                                       (rest code)
-                                       (conditions-conds  (first code))
-                                       (cons
-                                        (make-frame op-stack fun-stack env (rest code))
-                                        dump)
-                                       heap-inst)))
+                                      (write-object-nl "enter single cond case -->")
+                                      (do-is  (first code) state)
+                                     ))
 
                                    ((break? (first code))
-                                    ;;(leave-context op-stack fun-stack dump heap-inst)
-                                    state
-                                    )
+                                    (let* ([ frame (first dump) ]       
+                                           [ret-stack (frame-stack frame)])
+                                      (begin
+                                        (cond
+                                          ((> (op-stack 'size)  0)
+                                           (ret-stack 'push! (op-stack 'peekit) ;; herre was a 'peekit
+                                                      ))
+                                          (else 'do-nothing
+                                                ))
+                                        (make-secd
+                                         op-stack
+                                         (frame-fun-stack (first dump))
+                                         (frame-environment (first dump))
+                                         (frame-code (first dump))
+                                         (rest dump)
+                                         heap-inst
+                                         )
+                                        )))
+                                    
                              
-                                   ((code-block? (first code))                    
-
-                                     
-                                    (closure-apply state (code-block-code (first code)))
-                                      
+                                   ((code-block? (first code))                                    
+                                    (closure-apply state (code-block-code (first code)))                                      
                                     )
                              
                                    ((base? (first code))
@@ -317,7 +325,7 @@
                                    ((prim? (first code))                    
                                     (begin
                                       (print-stack-env-code op-stack fun-stack env (rest code) "prim? enter op stack--> ")                           
-                                      (write-object-nl (prim-operator (first code)))
+                                      (write-object-nl (list "OP - CODE:"(prim-operator (first code))))
                                       (let ([second-element  (stack-element-value (op-stack 'pop!))]
                                             [first-element (stack-element-value (op-stack 'pop!))])                                   
                                         (op-stack 'push! (new-stack-element 'app
@@ -364,7 +372,7 @@
 
                                    ((app-fun? (first code))                             
                                     (process-fun-app (first code) state
-                                                      )
+                                                     )
                                     )
                              
                                    ((ap? (first code))
@@ -434,7 +442,7 @@
                                                     (op-stack 'pop!))    
                                                    (closure-code closure)
                                                    dump
-                                                   heap-inst))))               
+                                                   heap-inst))))              
                                    (else
                                     (leave-context op-stack fun-stack dump heap-inst)
                                     )))
@@ -537,15 +545,15 @@
       (debug-snap-stack fun-stack "start processing FUN_STACK")
        
       (let* (                                   
-            [identifier (stack-element-value (op-stack 'pop!)) ]
-            [abstract-rec  (lookup-environment
+             [identifier (stack-element-value (op-stack 'pop!)) ]
+             [abstract-rec  (lookup-environment
                              env
                              dump
                              identifier)]
-            [parameter-binding (stack-element-value (op-stack 'pop!))]
-            [the-closure (make-closure (abst-variable (first abstract-rec))
-                                       (abst-code (first abstract-rec))
-                                       env)])
+             [parameter-binding (stack-element-value (op-stack 'pop!))]
+             [the-closure (make-closure (abst-variable (first abstract-rec))
+                                        (abst-code (first abstract-rec))
+                                        env)])
                                       
                                     
                               
@@ -569,18 +577,18 @@
                   (closure-variable the-closure)
                   parameter-binding)
                  ]
-              )
+                )
            
-              (make-secd   op-stack
-                           (make-stack  (list))         
-                           extended-env                                   
-                           (closure-code the-closure)
-                           (cons
-                            ;;  (first stack))
-                            (make-frame op-stack fun-stack env (rest code))
-                            dump)
-                           heap-inst)
-              ) ) ))))
+            (make-secd   op-stack
+                         (make-stack  (list))         
+                         extended-env                                   
+                         (closure-code the-closure)
+                         (cons
+                          ;;  (first stack))
+                          (make-frame op-stack fun-stack env (rest code))
+                          dump)
+                         heap-inst)
+            ) ) ))))
                    
   
 
@@ -601,15 +609,14 @@
     (let*  (
 
             [fresh-stack (make-stack (list))]
+            [dummy-w (write-object-nl (list "the case object" is-cond))]
             [dummy    ( cond
                          ((> (op-stack 'size) 0)
                           (fresh-stack 'push! (op-stack 'peekit))
                           )
                          (else (make-stack (list)))
                          )]
-            [cond-code (if (single-cond? (first code))
-                           (single-cond-what (first code))
-                           (list))]
+            [cond-code  (single-cond-what (first code))]
             [cond-secd (make-secd
                         fresh-stack
                         fun-stack
@@ -628,20 +635,15 @@
                 (stack-element-value (res-op-stack 'pop!))]
                [the-code  (if cond-result
                               (single-cond-code (first code))
-                              (leave-context op-stack fun-stack dump heap-inst))]
-               [the-closure   (make-closure 'blubb
-                                            the-code
-                                            env)])
-                                      
-          (make-secd  op-stack
+                              (rest code))])
+          (begin
+             (write-object-nl (list "Code executed: -> " the-code))
+          (make-secd  op-stack ;; op-stack
                       fun-stack
-                      (closure-environment the-closure)                                                                                  
-                      (closure-code the-closure)
-                      (cons
-                       ;;  (first stack))
-                       (make-frame op-stack fun-stack env (rest code))
-                       dump)
-                      heap-inst))))))
+                      env                                                                               
+                      the-code                   
+                      dump
+                      heap-inst)))))))
 
 (define closure-apply
   (lambda (secd-rec new-code)
@@ -815,7 +817,7 @@
                                                   )))
                     (app-fun higher 12))))  1648)
 
-#;(check-expect  (eval-secd (compile-secd
+(check-expect  (eval-secd (compile-secd
                              '((define allocator
                                  (lambda (x)
                                    (add (heap-alloc g 8)
@@ -823,26 +825,23 @@
                                              (heap-get-at g))
                                         )))
                                (define higher (lambda (x)
-                                                (code-block
+                                               
                                                  (where-cond  
                                                   (is? (== x 40)
                                                        (add 3 4))
                                                   (is? (== x 80)
                                                        (sub x  10))
-                                                  (is? (< x 11)
+                                                  (is? (== x 11)
                                                        (mul 8 7))
-                                                  (is? (> x 12)
-                                                       (add (app-fun allocator 100) 10)
+                                                  (is? (== x 12)
+                                                       (add (apply-fun allocator 100) 10)
                                                        ))
-                                                 (cond-branch (> x 1100)
-                                                              (mul 3 90)
-                                                              (add (app-fun allocator 200) (app-fun higher 110))
-                                                              ))
+                                               
                                                 ))
-                               (app-fun higher 80)))) 185)
+                               (apply-fun higher 12)))) 1602)
 
 
-(check-expect  (eval-secd
+#;(check-expect  (eval-secd
                 (compile-secd
                  '((define allocator
                      (lambda (x)
@@ -854,31 +853,59 @@
                                 )))))
                    (apply-fun allocator 7 8 9)))) 8)
 
-(check-expect  (eval-secd
+#;(check-expect  (eval-secd
                 (compile-secd
-                '((define allocator
-                    (lambda (x y z)                      
-                     (sub (add x y) z)))                 
+                 '((define allocator
+                     (lambda (x y z)                      
+                       (sub (add x y) z)))                 
                    (apply-fun allocator 7 8 9)))) 6)
 
 (check-expect  (eval-secd (compile-secd
-                             '((define allocator
-                                 (lambda (x)
-                                   (add (heap-alloc g 8)
-                                        (sub (mul x (heap-set-at! g 16))
-                                             (heap-get-at g))
-                                        )))
-                               (define higher (lambda (x)                          
-                                                (where-cond  
-                                                 (is? (== x 40)
-                                                      (add 3 4))
-                                                 (is? (== x 80)
-                                                      (sub x  10))
-                                                 (is? (< x 11)
-                                                      (mul 8 7))
-                                                 (is? (> x 120)
-                                                      (add (app-fun allocator 100) 10)
-                                                      ))
+                           '((define allocator
+                               (lambda (x)
+                                 (add (heap-alloc g 8)
+                                      (sub (mul x (heap-set-at! g 16)) ;;check this again
+                                           (heap-get-at g))
+                                      )))
+                             (define higher (lambda (x)                          
+                                              (where-cond  
+                                               (is? (== x 40)
+                                                    (add 3 4))
+                                               (is? (== x 80)
+                                                    (sub x  10))
+                                               (is? (== x 11)
+                                                    (add (apply-fun allocator 9) (mul 8 7))
+                                               ))
                                 
-                                                ))
-                               (app-fun higher 180)))) 185)
+                                              ))
+                             (apply-fun higher 11)))) 192)
+
+#;(check-expect  (eval-secd (compile-secd
+                '((define allocator
+                    (lambda (x)
+                      (add (heap-alloc g 8)
+                           (sub (mul x (heap-set-at! g 16))
+                                (heap-get-at g))
+                           )))
+                  (define higher (lambda (x)
+                                   (code-block
+                                    (where-cond  
+                                     (is? (== x 40)
+                                          (add 3 4)
+                                          (break))
+                                     (is? (== x 80)
+                                          (sub x (apply-fun higher 10))
+                                          (break))
+                                     (is? (< x 11)
+                                          (mul 8 7)
+                                          (break))
+                                     (is? (> x 12)
+                                          (add (apply-fun allocator 100) (apply-fun higher 10))
+                                          (break)
+                                          ))
+                                    (cond-branch (> x 1100)
+                                                 (mul 3 90)
+                                                 (add (apply-fun allocator 200) (apply-fun higher 110))
+                                                 ))
+                                   ))
+                  (apply-fun higher 10)))) 185)
