@@ -1,6 +1,6 @@
 #lang deinprogramm/sdp/advanced
 
-(require "secd-compiler.rkt")
+(require "secd-compiler.rkt" "secd-vm-defs.rkt" "operations.rkt" "stack.rkt")
 
 ;; Diese Audrücke müssen erneut geprüft werden
 ;;(check-expect (compile-secd '(((lambda (x) (lambda (y) (mul y  (add x y)))) 1) 2)) 3);; this works now
@@ -253,6 +253,17 @@
                                                  ))
                                    ))
                   (apply-fun higher 10))) 185)
+
+#;(define result_10 (make-abst ((make-stack (list))
+                              (list (make-define-def 'test-num-var 25)
+                               (make-define-def 'test-str-var "too much trouble")
+                               (make-define-def 'test-boolean-var #t)
+                               (make-define-def 'test-byte-var 250)
+                               (make-define-def 'allocator
+                                                (make-abst 'x
+                                                            (list (make-push!  (list 'push! 'g)) 
+                                                           (make-push!  (list 'push! 8)))))))))
+                                         
 
 (check-expect  (compile-secd
                            '((define test-num-var 25)
