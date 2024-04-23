@@ -114,12 +114,18 @@
       ;; Umsetzung der Allokation (Instanzierung) einer heyp Variable#n
       ;;Dynamische Bindung
       ((heap-allocator? term)
-       (append           
+     (append          
         (append-lists
          (map term->machine-code/t (rest term)))            
         (list (make-heap-alloc))))
             
-            
+      ;; Umsetzung der Freigabe einer Bindung auf dem Heap
+      ((heap-free-fun? term)
+       (append          
+        (append-lists
+         (map term->machine-code/t (rest term)))             
+        (list (make-heap-free))))
+      
       ;;Zuweisung (set! )  einer Heap-Variablen
       ((heap-assignment? term)
        (append           
@@ -265,6 +271,13 @@
         (append-lists
          (map term->machine-code/t (rest term)))            
         (list (make-heap-alloc))))
+
+       ;; Umsetzung der Freigabe einer Bindung auf dem Heap
+      ((heap-free-fun? term)
+       (append          
+        (append-lists
+         (map term->machine-code/t (rest term)))             
+        (list (make-heap-free))))
             
             
      
@@ -405,6 +418,13 @@
         (append-lists
          (map term->machine-code/t (rest term)))            
         (list (make-heap-alloc))))
+
+       ;; Umsetzung der Freigabe einer Bindung auf dem Heap
+      ((heap-free-fun? term)
+       (append          
+        (append-lists
+         (map term->machine-code/t (rest term)))             
+        (list (make-heap-free))))
             
             
      

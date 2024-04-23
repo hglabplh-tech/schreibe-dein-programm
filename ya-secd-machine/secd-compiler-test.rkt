@@ -290,3 +290,21 @@
                              (apply-fun higher 11))) 192)
 
 (check-expect  (read-analyze-compile "test-prog.secd.rkt") 6)
+
+(check-expect
+ (compile-secd
+             '((define heap-test
+                 (lambda (x)
+                   (where-cond
+                    (is? (== x 1)
+                         (heap-alloc hx 5))
+                    (is? (== x 2)
+                         (heab-set!-at hx 10))
+                    (is? (== x 3)
+                         (heap-get-at hx))
+                    (is? (== x 4)
+                        (heap-free hx)))))
+               (apply-fun heap-test 1)
+               (apply-fun heap-test 2)
+               (apply-fun heap-test 3)
+               (apply-fun heap-test 4))) 'DONE)

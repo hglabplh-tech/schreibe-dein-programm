@@ -64,7 +64,14 @@
                          (begin
                            (if (not (empty? code))
                                (begin
-                                 (cond                         
+                                 (cond
+
+                                   ;; Die Definition einer Abstraktion:
+                                   ;; Es wird eine Closure definiert
+                                   ;; Operations Stack: Keine Änderung
+                                   ;; Funktions Stack: davor ->NONE danach -> Closure aus der Abstraktion
+                                   ;; Environment: Keine Änderung
+                                   ;; Heap: Keine Änderung
                                    ((abst? (first code))
                                     (begin
                                       (print-stack-env-code op-stack fun-stack env code  "debug call abstraction")
@@ -84,14 +91,22 @@
                                            op-stack
                                            fun-stack
                                            env
-                                           ;;(closure-code the-closure)
                                            (rest code)
                                            dump
                                            heap-inst)))))
                                           
                                   
                                   
-                        
+
+                                   ;; Eine Operation wird ausgeführt ... bis jetzt Stack Operationen
+                                   ;; 1. Push Konstante
+                                   ;;        Operations Stack: davor NONE danach Konstante auf dem Stack
+                                   ;; 2. Push Binding Value (Unterschied ? Das Environment wird abgefragt
+                                   ;;    der Wert wird geholt
+                                   ;;         Operations Stack: davor NONE danach Binding Value auf dem Stack
+                                   ;; Funktions Stack:Keine Änderung
+                                   ;; Environment: Keine Änderung
+                                   ;; Heap: Keine Änderung
                                    ((op?  (first code))                     
                                     (let ([val (first (op-params (first code)))])
                                       (begin
@@ -128,23 +143,22 @@
                                                      (else
                                                       ((op-operation (first code))  op-stack  (new-stack-element 'app
                                                                                                                  val)))
-                                                     )))
-                              
-                                               )
-                                              ((single-cond? val)
-                                               ((op-operation (first code))  fun-stack  val))
-                                              )
-                                        (debug-snap-stack op-stack "stack after push correct ???!!!???")
-                                        (make-secd
-                                         op-stack
-                                         fun-stack
-                                         env
-                                         (rest code)
-                                         dump
-                                         heap-inst)
-                                  
+                                                     )))))
+                                         (make-secd
+                                           op-stack
+                                           fun-stack
+                                           env
+                                           (rest code)
+                                           dump
+                                           heap-inst)
                                         )))
 
+
+                                   ;; Hier wird in die Konditionen (where-cond) verzweigt
+                                    ;; Operations Stack: Keine Änderung
+                                   ;; Funktions Stack: Keine Änderung
+                                   ;; Environment: Keine Änderung
+                                   ;; Heap: Keine Änderung
                                    ((conditions? (first code))
                                     (begin
                                       (write-object-nl "enter conditions -->")
@@ -158,9 +172,9 @@
                                         (make-frame op-stack fun-stack env (rest code))
                                         dump)                                   
                                        heap-inst)))
-                                   
+
+                                   ;; Hier wird eine Kondition abgefragt und bei zutreffen verzweigt -> siehe 'do-is'
                                    ((single-cond? (first code))
-                                    
                                     (begin
                                       (write-object-nl "enter single cond case -->")
                                       (do-is  (first code) state)
@@ -172,12 +186,12 @@
                                       (begin
                                         (cond
                                           ((> (op-stack 'size)  0)
-                                           (ret-stack 'push! (op-stack 'peekit) ;; herre was a 'peekit
-                                                      ))
+                                           (op-stack 'add-all! ret-stack) 
+                                           )
                                           (else 'do-nothing
                                                 ))
                                         (make-secd
-                                         op-stack
+                                         (remove-params-from-stack op-stack (make-stack (list)))
                                          (frame-fun-stack (first dump))
                                          (frame-environment (first dump))
                                          (frame-code (first dump))
@@ -212,7 +226,7 @@
                                         (if (empty? act-value)
                                             (let ([new-heap-inst (extend-heap-stor heap-inst identifier the-value) ])
                                               (begin
-                                                (op-stack 'push! (new-stack-element 'app the-value))
+                                                ;;(op-stack 'push! (new-stack-element 'app the-value))
                                                 (debug-snap-heap heap-inst "print heap in ALLOC")
                                                 (make-secd
                                                  op-stack
@@ -231,6 +245,23 @@
                                              heap-inst)
                                             ))                              
                                       ))
+
+                                     ((heap-free? (first code))                                
+                                    (let* (
+                                           [identifier (stack-element-value (op-stack 'pop!))]
+                                           [heap-inst-new (free-heap-stor-cell  heap-inst  identifier)])
+                                      (begin
+                                        (debug-snap-heap heap-inst "print heap in free")
+                                       ;; (op-stack 'push! (new-stack-element 'app 'DONE))
+                                        (make-secd
+                                         op-stack
+                                         fun-stack
+                                         env
+                                         (rest code)
+                                         dump
+                                         heap-inst-new)
+                                        )                                                
+                                      ))
                                   
                                    ((heap-set-at!? (first code))
                                     (let* ([the-value  (stack-element-value (op-stack 'pop!))]
@@ -243,7 +274,7 @@
                                                 (debug-snap-heap heap-inst "print heap in SET")
                                      
                                                 (extend-heap-stor heap-inst identifier the-value)
-                                                (op-stack 'push! (new-stack-element 'app the-value)) 
+                                               ;; (op-stack 'push! (new-stack-element 'app the-value)) 
                                                 (make-secd
                                                  op-stack
                                                  fun-stack
@@ -274,8 +305,7 @@
                                          (rest code)
                                          dump
                                          heap-inst)
-                                        )
-                                                
+                                        )                                                
                                       ))
                                      
                                    ((where? (first code))
@@ -604,7 +634,10 @@
                      
      
     
-
+;; Abhandlung einer 'is?' Bedingung
+;; Status QUO (KOPF-Salat): ->
+;; describe later !!! it is hard to tell becuse i-know-what-i-am-doing ;-)
+;; Zuerst
 (define do-is
   (lambda (is-cond secd-state)
     (define code (secd-code secd-state))
@@ -651,6 +684,7 @@
                         the-code                   
                         dump
                         heap-inst)))))))
+               
 
 (define closure-apply
   (lambda (secd-rec new-code)

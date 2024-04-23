@@ -13,6 +13,9 @@
   (only-in      racket
                 byte?                   
                 [byte? byte-data?])
+  (only-in      racket
+                remove                   
+                [remove rm-binding])
   "stack.rkt")
   
 ;;(list-data? 5)
@@ -137,7 +140,12 @@
          heap-allocator?
          heap-alloc
          heap-alloc?
-         make-heap-alloc      
+         heap-free-fun
+         heap-free-fun?
+         make-heap-alloc
+         heap-free
+         heap-free?
+         make-heap-free
          heap-get-at
          heap-get-at?
          heap-getter
@@ -148,6 +156,7 @@
          heap-storage
          extend-heap-stor
          lookup-heap-stor
+         free-heap-stor-cell
          is-where?
          is
          is?
@@ -345,6 +354,14 @@
 
 (define heap-allocator (signature (predicate heap-allocator?)))
 
+(: heap-free-fun? (any -> boolean))
+(define heap-free-fun?
+  (lambda (term)
+    (and (cons? term)
+         (equal? 'heap-free (first term)))))
+
+(define heap-free-fun (signature (predicate heap-free-fun?)))
+
 (: heap-assignment? (any -> boolean))
 (define heap-assignment?
   (lambda (term)
@@ -359,9 +376,14 @@
 
 
 
-;; Rekord für eine heap Zuweisung // Getter / Allocator
+;; Rekord für eine heap Zuweisung // Getter / Allocator / Free
 (define-record  heap-alloc
   make-heap-alloc heap-alloc? )
+
+
+(define-record  heap-free
+  make-heap-free heap-free? )
+
 
 (define-record  heap-set-at!
   make-heap-set-at! heap-set-at!? )
@@ -921,6 +943,17 @@
            (rest heap-instance)
            (cons (first heap-instance)
                  (remove-heap-stor-cell (rest heap-instance) variable)))))))
+
+(: free-heap-stor-cell ((list-of heap-cell) var-symbol -> any))
+
+(define free-heap-stor-cell
+  (lambda (heap-instance variable) ;;; write new
+   (let ([the-new-stor (rm-binding variable (heap-storage heap-instance)
+               (lambda (var cell)
+                 (equal? var (heap-cell-variable cell) )))])
+     (make-heap the-new-stor))))
+    
+   
 
 
 ;; symbol? unter Ausschluss der "Schlüsselworte"
