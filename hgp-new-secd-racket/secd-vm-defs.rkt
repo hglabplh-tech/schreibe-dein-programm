@@ -1,22 +1,7 @@
-#lang deinprogramm/sdp/advanced
+#lang racket
 
-(require
-  (only-in      lang/htdp-advanced
-                procedure?
-                [procedure? proc-fun?])
-  (only-in      lang/htdp-advanced
-                list?                   
-                [list? list-data?])
-  (only-in      lang/htdp-advanced
-                char?                   
-                [char? char-data?])
-  (only-in      racket
-                byte?                   
-                [byte? byte-data?])
-  (only-in      racket
-                remove                   
-                [remove rm-binding])
-  "stack.rkt")
+(require rnrs/records/syntactic-6
+         "stack.rkt")
   
 ;;(list-data? 5)
 ;;(list-data?  '(6 7 8 9))
@@ -44,9 +29,7 @@
          frame-code
          term
          abstraction?
-         more-abstraction?
          application?
-         var-value
          secd
          make-secd
          secd-stack
@@ -60,7 +43,7 @@
          closure-variable
          closure-code
          closure?
-         base base?
+         base?
          make-ap
          ap ap?
          make-tailap
@@ -80,7 +63,6 @@
          op-parm-arity
          apply-primitive         
          primitive?
-         primitive-application
          primitive-application?
          abst
          make-abst
@@ -97,11 +79,9 @@
          ast-dump
          op-code?
          instruction
-         machine-code    
          smart-first
          smart-rest
          definition?
-         define-val
          define-def
          define-def?
          define-def-bind
@@ -112,6 +92,7 @@
          app-fun
          app-fun?
          make-app-fun
+         app-fun-args-code
          var-symbol?       
          stack-element
          make-stack-element
@@ -123,9 +104,9 @@
          where-condition?
          make-where
          where?
-         where?-condition
-         where?-if-branch
-         where?-else-branch
+         where-condition
+         where-if-branch
+         where-else-branch
          heap-assignment?
          heap-set-at!
          make-heap-set-at!
@@ -139,7 +120,6 @@
          heap-allocator?
          heap-alloc
          heap-alloc?
-         heap-free-fun
          heap-free-fun?
          make-heap-alloc
          heap-free
@@ -147,7 +127,6 @@
          make-heap-free
          heap-get-at
          heap-get-at?
-         heap-getter
          heap-getter?
          heap
          heap?
@@ -157,7 +136,6 @@
          lookup-heap-stor
          free-heap-stor-cell
          is-where?
-         is
          is?
          single-cond
          make-single-cond
@@ -174,34 +152,22 @@
          code-block?
          code-block-code
          break
-         the-break
          the-break?
          break?
          make-break
          rest-or-empty
-         is-integer
-         is-integer?
-         is-number
-         is-number?
-         is-string
-         is-string?
-         is-proc-fun
-         is-proc-fun?
-         is-char
-         is-char?
-         is-boolean
-         is-boolean?
-         is-byte
-         is-byte?
-         is-list
-         is-list?
-         is-prim-type?
-         prim-type
-         make-prim-type
-         prim-type?
-         prim-type-type
-         prim-type-pred
-         )
+         debug-step
+         debug-info
+         make-debug-info
+         debug-info?
+         debug-info-break-criteria-list
+         set-debug-info-break-criteria-list!
+         debug-info-continue-end
+         set-debug-info-continue-end! 
+         debug-channel
+         debug-on
+         debug-inf
+         set-debug-on!)
 
 ;;Hier der "Prozessor" Befehlssatz - als Idee
 (define op-code-syms '(  push pop peek create-const
@@ -226,19 +192,23 @@
 ;; Hir kommt die Sektion der "Primitiven Applikationen" das sind Operationen
 ;; welche direkkt in die Sprache eingebettet sind
 
-(define primitive (signature (predicate primitive?)))
 
-(: primitive? (any -> boolean))
+
+
 (define primitive?
   (lambda (term)
     (or (equal? 'add  term)
         (equal? 'sub term)
         (equal? 'mul term)
         (equal? 'div term)        
-        (condition-primitive? term))))
+        (condition-primitive? term)
+        (bitwise-primitive? term)
+        (type-predicate-primitive? term)
+        )
+    ))
        
 
-(: condition-primitive? (any -> boolean))
+
 (define condition-primitive?
   (lambda (term)
     (or (equal? '== term)
@@ -246,56 +216,70 @@
         (equal? '< term)
         (equal? '>= term)
         (equal? '<= term)
+        (equal? '! term)
+        (equal? '&& term)
+        (equal? '|| term)
         (equal? 'true? term)
         (equal? 'false? term)
         )
     ))
+
+(define bitwise-primitive?
+  (lambda (term)
+    (or (equal? 'bit-rshift  term)
+        (equal? 'bit-lshift  term)
+        (equal? 'bit-and term)
+        (equal? 'bit-ior  term)
+        (equal? 'bit-xor term)
+        (equal? 'bit-not term)
+        )
+    ))
+
+(define type-predicate-primitive?
+  (lambda (term)
+    (or (equal? 'boolean? term)
+        (equal? 'integer? term)
+        (equal? 'number? term)
+        (equal? 'string? term)
+        (equal? 'char? term)
+        (equal? 'byte? term)
+        (equal? 'list? term)
+        (equal? 'cons? term)
+        (equal? 'procedure? term)
+        )
+    ))
+        
+    
+    
+           
 ;; Ende der Definitionen für Primitive Application
 
 
 ;; die instructionen sind die Befehle / Definitionen die die "VM" kennt 
-(define instruction
-  (signature
-   (mixed 
-    base
-    var-symbol
-    op
-    ap
-    tailap
-    prim    
-    define-def
-    app-fun
-    abst
-    where
-    single-cond
-    heap-set-at!
-    heap-get-at
-    heap-alloc
-    single-cond
-    conditions
-    )))
+
 
 
 
 
 ; Applikations-Instruktion
-(define-record ap
-  make-ap ap?
+(define-record-type 
+  (ap make-ap ap?)
   )
 
 ; Eine endrekursive Applikations-Instruktion ist ein Wert
 ;   (make-tailap)
-(define-record tailap
-  make-tailap tailap?
+(define-record-type 
+  (tailap make-tailap tailap?)
   )
 
 ; Eine Abstraktions-Instruktion hat folgende Eigenschaften:
 ; - Parameter (eine Variable)
 ; - Code für den Rumpf
-(define-record abst
-  make-abst abst?
-  (abst-variable  var-symbol)
-  (abst-code machine-code))
+(define-record-type
+  (abst make-abst abst?)  
+  (fields
+   (immutable variable abst-variable)
+   (immutable code abst-code)))
 
 (define eval-param (lambda (term)
                      (if (symbol? (smart-first term))
@@ -314,43 +298,31 @@
 ; Eine Deefinitions-Instruktion hat folgende Eigenschaften:
 ; -  Ein Bezeichner
 ; -  ein Symbol ein Base eine Abstraction eine Applikation... 
-(define-record define-def
-  make-define-def  define-def?
-  (define-def-bind var-symbol)
-  (define-def-value define-val))
+(define-record-type
+  (define-def make-define-def define-def?)
+  (fields
+   (immutable bind define-def-bind )
+   (immutable value define-def-value)))
 
-;; verschiedene benötigte Signaturen
 
-
-(define define-val (signature term))
-
-(define var-value (signature any))
-
-(define environment (signature (list-of binding)))
-
-(define machine-code (signature (list-of instruction)))
-
-(define  proc-fun (signature (predicate proc-fun?)))
-
-;;Ein Stack ist eine Liste von Werten
-(define stack (signature any)) ;; ändern zum aktuellen Stand
-(define dump (signature (list-of frame)))
 ;; Hier die Definition der Umgebung
 ; Eine Bindung besteht aus:
 ; - Variable
 ; - Wer(define stack
-(define-record binding
-  make-binding binding?
-  (binding-variable var-symbol)
-  (binding-value var-value))
+(define-record-type
+  (binding make-binding binding?)
+  (fields
+   (immutable variable binding-variable)
+   (immutable value binding-value)))
 
 ;; dieser record is für die später komplett typisierte Speicherung von Werten auf dem Stack (noch nicht
 ;; vollendet)
-(define-record stack-element
-  make-stack-element stack-element? 
-  (stack-element-type var-symbol) ;; change signature
-  (stack-element-datatype any);;change signature
-  (stack-element-value any)) ;; change to typed
+(define-record-type
+  (stack-element make-stack-element stack-element?)
+  (fields
+   (immutable type stack-element-type)
+   (immutable datatype stack-element-datatype)
+   (immutable value stack-element-value)))
 
 ;; hier kommt die internen Definitionen einer Zuweisung
 
@@ -360,36 +332,34 @@
 
 ;; Definition wie ie Zuweisung im Code aussieht
 
-;; Signaturen für Heap Operationen
-(define heap-assignment (signature (predicate heap-assignment?)))
-(define heap-allocatur (signature (predicate heap-allocator?)))
-(define heap-getter (signature (predicate heap-getter?)))
 
 
 
-(: heap-allocator? (any -> boolean))
+
+
+
 (define heap-allocator?
   (lambda (term)
     (and (cons? term)
          (equal? 'heap-alloc (first term)))))
 
-(define heap-allocator (signature (predicate heap-allocator?)))
 
-(: heap-free-fun? (any -> boolean))
+
+
 (define heap-free-fun?
   (lambda (term)
     (and (cons? term)
          (equal? 'heap-free (first term)))))
 
-(define heap-free-fun (signature (predicate heap-free-fun?)))
 
-(: heap-assignment? (any -> boolean))
+
+
 (define heap-assignment?
   (lambda (term)
     (and (cons? term)
          (equal? 'heap-set-at! (first term)))))
 
-(: heap-getter? (any -> boolean))
+
 (define heap-getter?
   (lambda (term)
     (and (cons? term)
@@ -398,38 +368,42 @@
 
 
 ;; Rekord für eine heap Zuweisung // Getter / Allocator / Free
-(define-record  heap-alloc
-  make-heap-alloc heap-alloc? )
+(define-record-type
+  (heap-alloc make-heap-alloc heap-alloc?)
+  )
 
 
-(define-record  heap-free
-  make-heap-free heap-free? )
+(define-record-type
+  (heap-free make-heap-free heap-free?)
+  )
 
+(define-record-type
+  (heap-set-at! make-heap-set-at! heap-set-at!?)
+  )
 
-(define-record  heap-set-at!
-  make-heap-set-at! heap-set-at!? )
-
-(define-record  heap-get-at
-  make-heap-get-at heap-get-at? )
+(define-record-type
+  (heap-get-at make-heap-get-at heap-get-at?)
+  )
 
 
 
 ;; Die für den Heap notwendigen Definitionen eines
 
 ;; Definition einer Zelle die auf dem Heap liegt
-(define-record heap-cell
-  make-heap-cell heap-cell?
-  (heap-cell-variable var-symbol)
-  (heap-cell-init-value base) ;; change to typed
-  )
+(define-record-type
+  (heap-cell make-heap-cell heap-cell?)
+  (fields
+   (immutable variable heap-cell-variable)
+   (immutable init-value heap-cell-init-value) ;; change to typed
+   ))
 
 ;; Der Heap an sich
 
-(define heap-content (signature (list-of heap-cell)))
 
-(define-record heap
-  make-heap heap?
-  (heap-storage heap-content))
+(define-record-type
+  (heap make-heap heap?)
+  (fields
+   (immutable storage heap-storage)))
 
 ;; Heap Alloc Signatur
 
@@ -441,12 +415,13 @@
 ;; Stack für Abstractionen / Closures
 ; - Umgebung
 ; - Code
-(define-record frame
-  make-frame frame?
-  (frame-stack stack)
-  (frame-fun-stack stack)
-  (frame-environment environment)
-  (frame-code machine-code))
+(define-record-type
+  (frame make-frame frame?)
+  (fields
+   (immutable stack frame-stack)
+   (immutable fun-stack frame-fun-stack)
+   (immutable environment frame-environment)
+   (immutable code frame-code)))
 
 
 
@@ -454,11 +429,12 @@
 ; - Variable
 ; - Code
 ; - Umgebung
-(define-record closure
-  make-closure closure?
-  (closure-variable var-symbol)
-  (closure-code machine-code)
-  (closure-environment environment))
+(define-record-type
+  (closure make-closure closure?)
+  (fields
+   (immutable variable closure-variable)
+   (immutable code closure-code)
+   (immutable environment closure-environment)))
 
 ; Ein SECD-Zustand besteht aus:
 ; - Stack
@@ -466,99 +442,109 @@
 ; - Umgebung
 ; - Code
 ; - Dump
-(define-record secd
-  make-secd secd?
-  (secd-stack stack)
-  (secd-fun-stack stack)
-  (secd-environment environment)
-  (secd-code machine-code)
-  (secd-dump dump)
-  (secd-heap heap)
-  )
+(define-record-type
+  (secd make-secd secd?)
+  (fields
+   (immutable stack secd-stack)
+   (immutable fun-stack secd-fun-stack)
+   (immutable environment secd-environment)
+   (immutable code secd-code)
+   (immutable dump secd-dump)
+   (immutable heap secd-heap)))
+  
 
 ; Eine Instruktion für eine primitive Applikation hat folgende
 ; Eigenschaften:
 ; - Operator
 ; - Stelligkeit
-(define-record prim
-  make-prim prim?
-  (prim-operator symbol)
-  (prim-arity natural))
+(define-record-type
+  (prim make-prim prim?)
+  (fields
+   (immutable operator prim-operator) 
+   (immutable arity prim-arity)))
 
 
 
 ; Eine Instruktion für eine Funktions Applikation hat folgende
 ; Eigenschaften:
 
-(define-record app-fun
-  make-app-fun app-fun?)
+(define-record-type
+  (app-fun make-app-fun app-fun?)
+  (fields
+   (immutable args-code app-fun-args-code)
+   ))
+  
 ;; (app-fun-variable var-symbol)
 ;;(app-fun-code machine-code))
 
 ;; Diese Struktur dient zur Darstellung eines "Conditional Branch"
-(define-record where
-  make-where where?
-  (where?-condition machine-code) 
-  (where?-if-branch machine-code)
-  (where?-else-branch machine-code))
+(define-record-type
+  (where make-where where?)
+  (fields
+   (immutable condition where-condition) 
+   (immutable if-branch where-if-branch)
+   (immutable else-branch where-else-branch)))
 
 ;; Definition eines Begin Blocks - Instruktions-Sequenz
-(: begin-it? (any -> boolean))
+
 (define begin-it?
   (lambda (term)
     (and (cons? term)
          (equal? 'code-block (first term)))))
 
-(define-record code-block
-  make-code-block code-block?
-  (code-block-code machine-code))
+(define-record-type
+  (code-block make-code-block code-block?)
+  (fields
+   (immutable code code-block-code)))
 
 
 ;; Definition eines  generellen Blocks von Bedingungen
 
 ;; Definition der instruction keywords für Bedingungen
 
-(: is-where? (any -> boolean))
+
 (define is-where?
   (lambda (term)
     (and (cons? term)
          (equal? 'where-cond (first term)))))
 
-(define is-where (signature (predicate is-where?)))
 
-(: is? (any -> boolean))
+
+
 (define is?
   (lambda (term)
     (and (cons? term)
          (equal? 'is? (first term)))))
 
-(define is (signature (predicate is?)))
 
-(: the-break? (any -> boolean))
+
+
 (define the-break?
   (lambda (term)
     (and (cons? term)
          (equal? 'break (first term)))))
 
-(define  the-break (signature (predicate the-break?)))
+
 
 
 
 ;; Definition für den Ausstieg aus where-cond
-(define-record  break
-  make-break break?)
+(define-record-type
+  (break make-break break?))
 
 ;; Definition einer einzelnen enthltenen Bedingung
-(define-record single-cond
-  make-single-cond single-cond?
-  (single-cond-what machine-code)
-  (single-cond-code machine-code))
+(define-record-type
+  (single-cond make-single-cond single-cond?)
+  (fields
+   (immutable what single-cond-what)
+   (immutable code single-cond-code)))
 
 ;; Definition des Bedingungs-Blocks
-(define-record conditions
-  make-conditions conditions?
-  (conditions-conds (list-of single-cond))
-  )
+(define-record-type
+  (conditions make-conditions conditions?)
+  (fields
+   (immutable conds conditions-conds)
+   ))
 ;; define record for begin
 
 
@@ -568,19 +554,19 @@
 ; - Stelligkeit - Stack
 ; - Anzahl der auf dem Stack ausgegebenen Ergebnis - Werte
 ; - Stelligkeit op parameter
-(define-record op
-  make-op op?  
-  (op-code symbol)
-  (op-operation proc-fun)
-  (op-params  (list-of any))
-  (op-stack-arity natural)
-  (op-stack-out natural)
-  (op-parm-arity natural)
-  )
+(define-record-type
+  (op make-op op?)
+  (fields
+   (immutable code op-code)
+   (immutable operation op-operation)
+   (immutable params op-params) 
+   (immutable stack-arity op-stack-arity)
+   (immutable stack-out op-stack-out)
+   (immutable parm-arity op-parm-arity)))
 
 ; Ein Basiswert ist ein boolescher Wert oder eine Zahl
 ; Prädikat für Basiswerte
-(: base? (any -> boolean))
+
 (define base?
   (lambda (term)
     (and (or (boolean? term)
@@ -588,7 +574,7 @@
              (byte?  term)
              (string? term)
              (list? term)
-             (proc-fun? term)
+             (procedure? term)
              (number? term)
              (integer? term))
          (not (abstraction? term))
@@ -605,47 +591,15 @@
          (not (equal? term 'heap-free))
          (not (equal? term'heap-get-at))
          (not (equal? term 'heap-set-at!))
-         (not (equal? term 'is-char?))
-         (not (equal? term 'is-integer))
-         (not (equal? term 'is-number))
-         (not (equal? term 'is-boolean?))
-         (not (equal? term 'is-char?))
-         (not (equal? term 'is-byte?))
-         (not (equal? term 'is-string?))
-         (not (equal? term 'is-proc-fun?))         
+                
          )))
         
         
 
 
-;; Base Signatur
-(define base (signature (predicate base?)))
 
-(define term
-  (signature
-   (mixed var-symbol
-          definition
-          fun-application
-          where-condition
-          application
-          abstraction
-          more-abstraction
-          primitive-application
-          is-where
-          is
-          heap-allocator
-          heap-getter
-          heap-assignment
-          heap-free-fun
-          is-boolean
-          is-number
-          is-integer
-          is-list
-          is-proc-fun
-          is-string
-          is-char
-          is-byte          
-          base)))
+
+
 
 
 ;; Funktion zur realen Applikation von Primitives
@@ -674,6 +628,45 @@
          (>= (first args) (first (rest args))))
         ((equal? primitive '<=)
          (<= (first args) (first (rest args))))
+        ((equal? primitive '>>)
+         (arithmetic-shift (first args)
+                           (first (rest args))))
+        ((equal? primitive '<<)
+         (arithmetic-shift (first args)
+                           (* (first (rest args)) -1)))
+        ((equal? primitive 'bit-and)
+         (bitwise-and (first args)
+                      (first (rest args))))
+        ((equal? primitive 'bit-ior)
+         (bitwise-ior (first args)
+                      (first (rest args))))
+        ((equal? primitive 'bit-xor)
+         (bitwise-xor (first args)
+                      (first (rest args))))
+        ((equal? primitive 'bit-not)
+         (bitwise-not (first args)))
+        ((equal? primitive 'bit-xor)
+         (bitwise-xor (first args)
+                      (first (rest args))))
+
+        ((equal? primitive 'boolean?)
+         (boolean? (first args)))
+        ((equal? primitive 'integer?)
+         (integer? (first args)))
+        ((equal? primitive 'number?)
+         (number? (first args)))
+        ((equal? primitive 'string?)
+         (string? (first args)))
+        ((equal? primitive 'char?)
+         (char? (first args)))
+        ((equal? primitive 'byte?)
+         (byte? (first args)))
+        ((equal? primitive 'list?)
+         (list? (first args)))
+        ((equal? primitive 'cons?)
+         (cons? (first args)))
+        ((equal? primitive 'procedure?)
+         (procedure? (first args)))
         ))))
 
 
@@ -681,24 +674,26 @@
 
 
 ; Prädikat für reguläre Applikationen
-(: application? (any -> boolean))
+
 (define application?
   (lambda (term)
     (and (cons? term)         
          (not (equal? 'lambda (first term)))
          (not (equal? 'lfn (first term)))       
          (not (equal? 'define (first term)))
-         (not (primitive? (first term)))
-         (not (is-prim-type? (first term)))
+         (not (primitive? (first term)))        
          (not (fun-application? (first term)))
          (not (where-condition? (first term)))
          (not (is-where? (first term)))
          (not (is? (first term)))
+         (not (var-symbol? (first term)))
+         (not (base? (first term)))
          (not (the-break? (first term)))
          (not (heap-allocator? (first term)))
          (not (heap-free-fun? (first term)))
          (not (heap-assignment? (first term)))
-         (not (heap-getter? (first term)))      
+         (not (heap-getter? (first term)))
+      
          )))
 
 ;;hier muss geprüft werden ob man das tatsächlich braucht
@@ -724,142 +719,56 @@
     ))    
 ;;======================================
 
-(define application (signature (predicate application?)))
+
 
 
 ; Prädikat für Abstraktionen
-(: definition? (any -> boolean))
+
 (define definition? (lambda (term)
                       (equal?  term 'define) ))
 
-(define definition (signature (predicate definition?)))
+
 
 ;; ======================= DATENTYP DEFINITIONEN (TYPED LANGUAGE) ===============
 
-;; Hier die Prädikate um abzufragen mit welchem Typ wir ees zu tun haben
+;; Hier die Prädikate um abzufragen mit welchem Typ wir ees zu tun hab
 
-(define base-list-type (signature (list-of base?)))
 
-(define-record prim-type
-  make-prim-type prim-type?
-  (prim-type-type var-symbol)
-  (prim-type-pred type-pred-sigs))
 
-(define ask-type (signature (mixed list is-boolean is-integer is-number is-string is-char is-list is-byte is-proc-fun )))
+;; Typ Operationen
 
-(define is-prim-type?
-  (lambda (term)
-    (or
-     (is-integer? term)
-     (is-number? term)
-     (is-boolean? term)
-     (is-proc-fun? term)
-     (is-byte? term)
-     (is-char? term)
-     (is-string? term)
-     (is-list? term)
-     )))
+(define safe-first
+  (lambda (lst)
+    (if (and (list? lst) (not (empty? lst)))
+        (first lst)
+        lst)))
 
-(: is-boolean? (any -> boolean))
+(define safe-rest
+  (lambda (lst)
+    (if (and (list? lst) (not (empty? lst)))
+        (rest lst)
+        lst)))
 
-(define is-boolean?
+(define lst-first
   (lambda (term)
     (and (cons? term)
-         (equal? 'is-boolean? (first term)))))
+         (equal? 'first (first term)))))
 
-
-(define is-boolean (signature (predicate is-boolean?)))
-
-(: is-integer? (any -> boolean))
-
-(define is-integer?
+(define lst-rest
   (lambda (term)
     (and (cons? term)
-         (equal? 'is-integer? (first term)))))
-
-
-(define is-integer (signature (predicate is-integer?)))
-
-(: is-number? (any -> boolean))
-
-(define is-number?
-  (lambda (term)
-    (and (cons? term)
-         (equal? 'is-number? (first term)))))
-
-(define is-number (signature (predicate is-number?)))
-
-(: is-string? (any -> boolean))
-
-(define is-string?
-  (lambda (term)
-    (and (cons? term)
-         (equal? 'is-string? (first term)))))
-
-(define is-string (signature (predicate is-string?)))
-
-(: is-char? (any -> boolean))
-
-(define is-char?
-  (lambda (term)
-    (and (cons? term)
-         (equal? 'is-char? (first term)))))
-
-(define is-char (signature (predicate is-char?)))
-
-(: is-byte? (any -> boolean))
-
-(define is-byte?
-  (lambda (term)
-    (and (cons? term)
-         (equal? 'is-byte? (first term)))))
-
-(define is-byte (signature (predicate is-byte?)))
-
-(: is-list? (any -> boolean))
-
-(define is-list?
-  (lambda (term)
-    (and (cons? term)
-         (equal? 'is-list? (first term)))))
-
-(define is-list (signature (predicate is-list?)))
-
-(: is-proc-fun? (any -> boolean))
-
-(define is-proc-fun?
-  (lambda (term)
-    (and (cons? term)
-         (equal? 'is-proc-fun? (first term)))))
-
-(define is-proc-fun (signature (predicate is-proc-fun?)))
-
-;; Die Signaturen für die Funktionen
-
-
-(define integer-sig (signature (predicate integer?)))
-(define number-sig  (signature (predicate number?)))
-(define string-sig  (signature (predicate string?)))
-(define boolean-sig (signature (predicate boolean?)))
-(define proc-sig    (signature (predicate proc-fun?)))
-(define byte-sig    (signature (predicate byte-data?)))
-(define char-sig    (signature (predicate char-data?)))
-(define list-sig    (signature (predicate list-data?)))
-
-(define type-pred-sigs (signature (mixed integer-sig number-sig string-sig boolean-sig
-                                         proc-sig byte-sig char-sig list-sig)))
-
-
+         (equal? 'rest (first term)))))
 
 ;; hier die Definitionen zur Typ-Deklaration statische Typisierung
 
-(define-record data-type-decl
-  make-data-type-decl data-type-decl?
-  (data-type-decl-type-id natural)
-  (datatype-decl-type-name string)
-  (data-type-decl-len-var boolean)
-  (data-type-decl-length natural)
-  )
+(define-record-type
+  (data-type-decl mak-data-type-decl data-type-decl?)
+  (fields
+   (immutable type-id data-type-decl-type-id)
+   (immutable type-name data-type-decl-type-name)
+   (immutable len-var data-type-decl-len-var)
+   (immutable length data-type-decl-length)))
+ 
 
 
 
@@ -867,27 +776,20 @@
 
 
 ; Prädikat für Abstraktionen
-(: abstraction? (any -> boolean))
+
 (define abstraction?
   (lambda (term)
     (and (cons? term)
          (equal? 'lambda (first term))
          )))
 
-; Prädikat für Abstraktionen
-(: more-abstraction? (any -> boolean))
-(define more-abstraction?
-  (lambda (term)
-    (and (cons? term)
-         (equal? 'fn (first term))
-         )))
 
-(define abstraction (signature (predicate abstraction?)))
 
-(define more-abstraction (signature (predicate more-abstraction?)))
+
+
 
 ; Prädikat für primitive Applikationen
-(: primitive-application? (any -> boolean))
+
 (define primitive-application?
   (lambda (term)
     (and (cons? term)
@@ -895,38 +797,33 @@
          )))
 
 ; Prädikat für higher order Applikationen
-(: fun-application? (any -> boolean))
+
 (define fun-application?
   (lambda (term)
     (and (cons? term)
          (equal? (first term) 'apply-fun)
          )))
 
-(define fun-application (signature (predicate fun-application?)))
 
 ; Prädikat für where Bedingungen
-(: where-condition? (any -> boolean))
+
 (define where-condition?
   (lambda (term)
     (and (cons? term) 
          (equal? (first term) 'cond-branch)
          )))
 
-(define where-condition (signature (predicate  where-condition?)))
-
-
-
-(define primitive-application (signature (predicate primitive-application?)))
 
 ;;Record für einen abstrakten Syntax-Baum für spätere Benutzung
-(define-record ast
-  make-ast ast?
-  (ast-stack stack)
-  (ast-code machine-code)
-  (ast-next machine-code)
-  (ast-env  environment)
-  (ast-dump dump)
-  )
+(define-record-type
+  (ast make-ast ast?)
+  (fields
+   (immutable stack ast-stack)
+   (immutable code ast-code) 
+   (immutable next ast-next)
+   (immutable env ast-env)
+   (immutable dump ast-dump)))
+  
 
 (define new-stack-element
   (lambda (type val)
@@ -934,11 +831,11 @@
     ))
 
 
-(: the-empty-environment environment)
+
 (define the-empty-environment empty)
 
 ; eine Umgebung um eine Bindung erweitern
-(: extend-environment (environment symbol var-value -> environment))
+
 
 ;; Bindung zur Umgebung zufügen
 (define  extend-environment
@@ -948,7 +845,7 @@
           (remove-environment-binding env var-symbol)  )))
 
 ;; Hilfsfunktion für obiges
-(: remove-environment-binding (environment symbol -> environment))
+
 
 (define remove-environment-binding
   (lambda (environment variable)
@@ -961,7 +858,7 @@
                  (remove-environment-binding (rest environment) variable)))))))
 
 ;; Lookup einr Bindung in der aktuellen Umgebung
-(: lookup-act-environment (environment symbol -> var-value))
+
 
 (define lookup-act-environment
   (lambda (environment variable)
@@ -980,10 +877,10 @@
 
 (define lookup-environment
   (lambda (environment dump variable)
-    (let* ((act-val (lookup-act-environment environment variable)))
+    (let* ([act-val (lookup-act-environment environment variable)])
       (cond ((not (empty? act-val)) act-val)
-            (else  (env-lookup-helper dump variable)
-                   )))))
+            ((not (empty? dump))  (env-lookup-helper dump variable))
+            (else act-val)))))
 
 ;; Hilfsfunktion für Lookup
 (define env-lookup-helper (lambda (dump variable)
@@ -999,7 +896,7 @@
 
 
 ;; Lookup einr Bindung in der aktuellen Umgebung
-(: lookup-heap-stor (heap symbol -> var-value))
+
 
 (define lookup-heap-stor
   (lambda (heap-instance-rec variable)
@@ -1012,7 +909,7 @@
              (lookup-heap-stor (rest heap-instance) variable)))))))
 
 ; eine Umgebung um eine Bindung erweitern
-(: extend-heap-stor (heap symbol var-value -> heap))
+
 
 ;; Bindung zur Umgebung zufügen
 (define  extend-heap-stor
@@ -1024,7 +921,7 @@
       )))
 
 ;; Hilfsfunktion für obiges
-(: remove-heap-stor-cell ((list-of heap-cell) var-symbol ->  (list-of heap-cell)))
+
 
 (define remove-heap-stor-cell
   (lambda (heap-instance variable)
@@ -1036,21 +933,20 @@
            (cons (first heap-instance)
                  (remove-heap-stor-cell (rest heap-instance) variable)))))))
 
-(: free-heap-stor-cell ((list-of heap-cell) var-symbol -> any))
+
 
 (define free-heap-stor-cell
   (lambda (heap-instance variable) ;;; write new
-    (let ([the-new-stor (rm-binding variable (heap-storage heap-instance)
-                                    (lambda (var cell)
-                                      (equal? var (heap-cell-variable cell) )))])
+    (let ([the-new-stor (remove variable (heap-storage heap-instance)
+                                (lambda (var cell)
+                                  (equal? var (heap-cell-variable cell) )))])
       (make-heap the-new-stor))))
     
    
 
 
 ;; symbol? unter Ausschluss der "Schlüsselworte"
-(: var-symbol? (any -> boolean))
-(define var-symbol (signature (predicate var-symbol?)))
+
 (define var-symbol?
   (lambda (term)
     (let ([token term])
@@ -1067,14 +963,176 @@
            (not (equal? token 'heap-free))
            (not (equal? token 'heap-get-at))
            (not (equal? token 'heap-set-at!))
-           (not (equal? token 'is-char?))
-           (not (equal? token 'is-integer))
-           (not (equal? token 'is-number))
-           (not (equal? token 'is-boolean?))
-           (not (equal? token 'is-char?))
-           (not (equal? token 'is-byte?))
-           (not (equal? token 'is-string?))
-           (not (equal? token 'is-proc-fun?))
-           (not (base? token)) )
+           (not (base? token)))
       )))
+
+
+(define term
+  (list
+   var-symbol?
+   definition?
+   fun-application?
+   where-condition?
+   application?
+   abstraction?
+    
+   primitive-application?
+   is-where?
+   is?
+   heap-allocator?
+   heap-getter?
+   heap-assignment?
+   heap-free-fun?             
+   base?))
+
+
+
+(define instruction
+  (list
+   base?
+   var-symbol?
+   op?
+   ap?
+   tailap?
+   prim?    
+   define-def?
+   app-fun?
+   abst?
+   where?
+   single-cond?
+   heap-set-at!?
+   heap-get-at?
+   heap-alloc?
+   single-cond?
+   conditions?
+   ))
+
+
+;; Debug Funktionalität Deefinitionen Funktionen
+
+;; VM Seite
+
+(define-record-type
+  (debug-info make-debug-info debug-info?)
+  (fields
+   (mutable break-criteria-list debug-info-break-criteria-list set-debug-info-break-criteria-list!)
+   (mutable continue-end debug-info-continue-end set-debug-info-continue-end! )
+   ))
+
+(define go-next-step
+  (lambda (secd-rec)
+    (print (list "next code: " (secd-code secd-rec)))
+    ))
+
+(define go-next-criteria
+  (lambda (secd-rec)
+    (print (list "next code: " (secd-code secd-rec)))
+    ))
+
+(define show-next-code
+  (lambda (secd-rec)
+    (print (list "next code: " (secd-code secd-rec)))
+    ))
+
+(define show-env
+  (lambda (secd-rec)
+    (print (list "env content is: " (secd-environment secd-rec)))
+    ))
+
+(define show-op-stack
+  (lambda (secd-rec)
+    (print (list "op stack is: " ((secd-stack secd-rec) 'print-stack)))
+    ))
+
+(define show-fun-stack
+  (lambda (secd-rec)
+    (print (list "fun stack is: " ((secd-fun-stack secd-rec) 'print-stack)))
+    ))
+
+(define show-heap
+  (lambda (secd-rec)
+    (print (list "heap content is: " (secd-heap secd-rec)))
+    ))
+
+
+
+(define debug-cmd-pairs
+  (list
+   (list "step" go-next-step)
+   (list "continue" go-next-criteria)
+   (list "show-next-code" show-next-code)
+   (list "show-env" show-env)
+   (list "show-op-stack" show-op-stack)
+   (list "show-fun-stack" show-fun-stack)
+   (list "show-heap" show-heap)
+   ))
+
+(define debug-channel
+  (make-channel))
+(define debug-on #f)
+
+(define debug-inf (make-debug-info '() #f))
+
+
+    
+
+(define process-dbg-cmd
+  (lambda (dbg-cmd secd-rec)
+    (let until-cont ([command dbg-cmd])
+      (let* ([cmd-fun-pair (assoc command debug-cmd-pairs)]
+             [cmd-fun (if (not (eq? cmd-fun-pair #f))
+                               (second cmd-fun-pair)
+                               go-next-step)])
+        (cmd-fun secd-rec)
+        (if (or (eq? command "continue")
+                (eq? command "step"))
+            'end
+            (until-cont (channel-get debug-channel))
+            )
+        )
+      )))
+
+(define check-if-in-crit
+  (lambda (the-rec criteria-list)
+    (let recur-it ([the-list criteria-list])
+
+      (let ([cmd (if (not (empty? the-list))
+                            (first the-list)
+                            '())])
+        (if (empty? cmd)
+          #f
+          (if (cmd the-rec)
+              #t
+              (recur-it (rest the-list))
+              ))))))
+
+(define debug-step
+  (lambda (secd-rec)
+    (let ([dbg-cmd (channel-get debug-channel)])
+      (if debug-on
+          (begin
+            (cond
+              ((not (empty? ( debug-info-break-criteria-list debug-inf)))
+               (let ([criteria-list (( debug-info-break-criteria-list debug-inf))])
+                 (if (check-if-in-crit (first (secd-code secd-rec)) criteria-list)
+                     (process-dbg-cmd dbg-cmd secd-rec)
+                     secd-rec)))
+              (else  (process-dbg-cmd dbg-cmd secd-rec)))              
+              
+            )
+          debug-on))))
+
+
+        
   
+;; Debugger Seite
+
+(define send-dbg-cmd
+  (lambda (dbg-cmd)
+    (channel-put debug-channel dbg-cmd)
+    ))
+
+(define set-debug-on!
+  (lambda (flag)
+    (set! debug-on flag)))
+

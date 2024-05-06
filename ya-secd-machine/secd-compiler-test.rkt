@@ -1,4 +1,7 @@
-#lang deinprogramm/sdp/advanced
+;; Die ersten drei Zeilen dieser Datei wurden von DrRacket eingefügt. Sie enthalten Metadaten
+;; über die Sprachebene dieser Datei in einer Form, die DrRacket verarbeiten kann.
+#reader(lib "advanced-reader.rkt" "deinprogramm" "sdp")((modname secd-compiler-test) (read-case-sensitive #f) (teachpacks ()) (deinprogramm-settings #(#f write repeating-decimal #f #t none datum #f ())))
+;;#lang deinprogramm/sdp/advanced
 
 (require "secd-compiler.rkt" "secd-vm-defs.rkt" "operations.rkt" "stack.rkt")
 
@@ -206,16 +209,16 @@
                                                 (where-cond  
                                                  (is? (== x 40)
                                                       (add 3 4)
-                                                      (break))
+                                                      )
                                                  (is? (== x 80)
                                                       (sub x  10)
-                                                      (break))
+                                                      )
                                                  (is? (< x 11)
                                                       (mul 8 7)
-                                                      (break))
+                                                      )
                                                  (is? (> x 120)
                                                       (add (apply-fun allocator 100) 10)
-                                                      (break)
+                                                      
                                                       ))
                                 (cond-branch (> x 1100)
                                                  (mul 3 90)
@@ -236,16 +239,14 @@
                                     (where-cond  
                                      (is? (== x 40)
                                           (add 3 4)
-                                          (break))
+                                          )
                                      (is? (== x 80)
-                                          (sub x (apply-fun higher 10))
-                                          (break))
+                                          (sub x (apply-fun higher 10)))                                          
                                      (is? (< x 11)
-                                          (mul 8 7)
-                                          (break))
+                                          (mul 8 7))
                                      (is? (> x 12)
                                           (add (apply-fun allocator 100) (apply-fun higher 10))
-                                          (break)
+                                          
                                           ))
                                     (cond-branch (> x 1100)
                                                  (mul 3 90)
@@ -308,3 +309,40 @@
                (apply-fun heap-test 2)
                (apply-fun heap-test 3)
                (apply-fun heap-test 4))) 'DONE)
+
+
+(check-expect
+ (compile-secd
+             '((define type-test
+                 (lambda (x)
+                   (where-cond
+                    (is? (== x 1)
+                         (is-integer? x))
+                    (is? (== x 2)
+                         (is-string? x))
+                    (is? (== x 3)
+                         (is-char? x))
+                    (is? (== x 4)
+                        (is-byte? x)))))
+               (apply-fun type-test 1)
+               (apply-fun type-test 2)
+               (apply-fun type-test 3)
+               (apply-fun type-test 4))) 'DONE-PART-2)
+
+(compile-secd
+             '((define type-test
+                 (lambda (x)
+                   (where-cond
+                    (is? (== x 1)
+                         (is-integer? x))
+                    (is? (== x 2)
+                         (is-string? x))
+                    (is? (== x 3)
+                         (is-char? x))
+                    (is? (== x 4)
+                        (is-byte? x)))))
+               (apply-fun type-test 1)
+               (apply-fun type-test 2)
+               (apply-fun type-test 3)
+               (apply-fun type-test 4)))
+

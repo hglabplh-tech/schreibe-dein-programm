@@ -1,4 +1,7 @@
-#lang deinprogramm/sdp/advanced
+;; Die ersten drei Zeilen dieser Datei wurden von DrRacket eingefügt. Sie enthalten Metadaten
+;; über die Sprachebene dieser Datei in einer Form, die DrRacket verarbeiten kann.
+#reader(lib "advanced-reader.rkt" "deinprogramm" "sdp")((modname secd-compiler) (read-case-sensitive #f) (teachpacks ()) (deinprogramm-settings #(#f write repeating-decimal #f #t none datum #f ())))
+;;#lang deinprogramm/sdp/advanced
 
 ;; Diese Definitions Datei implementiert den Compiler zu  unserer SECD(H)
 ;; VM ... der Gedanke hinter diesen Definitionen ist es Code zu übersetzen
@@ -13,12 +16,14 @@
   "secd-vm-defs.rkt"
   "stack.rkt"
   "operations.rkt"
+  "secd-vm-data-types.rkt"
   "debug-out.rkt"
+  
   racket/port
   (only-in     racket
                set!
                [set! set-it!])
-   (only-in     racket
+  (only-in     racket
                eof-object?)              
   (only-in     racket
                read
@@ -47,6 +52,8 @@
 (: term->machine-code (term -> machine-code))
 (define term->machine-code ;; spielt hier diee Reihenfolge der cases eine Rolle?
   (lambda (term)
+    (begin
+    (debug-compile-term term)
     (cond
 
       ;; Umsetzung einer 'top level' definition (define)
@@ -114,7 +121,7 @@
       ;; Umsetzung der Allokation (Instanzierung) einer heyp Variable#n
       ;;Dynamische Bindung
       ((heap-allocator? term)
-     (append          
+       (append          
         (append-lists
          (map term->machine-code/t (rest term)))            
         (list (make-heap-alloc))))
@@ -183,6 +190,16 @@
         (list (make-prim
                (smart-first term)
                2))))
+
+      ((is-prim-type? term)
+       (let* ([typedef-inst (get-typedef-from-tab (first term))]
+              [op-rec (prim-type-pred-op typedef-inst)])
+         (append          
+          (append-lists
+           (map term->machine-code/t (rest term)))
+          (list op-rec))))
+      
+       
       
       ((and (not (empty? term)) (cons? term)
             (cons? (rest term)) (not (empty? (rest term))))
@@ -190,7 +207,7 @@
                (append (term->machine-code/t (first (rest term))))))
       
     
-      )))
+      ))))
 
 
 
@@ -201,10 +218,12 @@
 (: term->machine-code/t (term -> machine-code))
 (define term->machine-code/t
   (lambda (term)
+    (begin
+    (debug-compile-term term)
     (cond
 
     
-     ((definition? (smart-first term))
+      ((definition? (smart-first term))
        (let ([identifier (first (rest term))]
              [expression (first (rest (rest term)))])
          (if (base? expression)
@@ -272,7 +291,7 @@
          (map term->machine-code/t (rest term)))            
         (list (make-heap-alloc))))
 
-       ;; Umsetzung der Freigabe einer Bindung auf dem Heap
+      ;; Umsetzung der Freigabe einer Bindung auf dem Heap
       ((heap-free-fun? term)
        (append          
         (append-lists
@@ -334,6 +353,15 @@
         (list (make-prim
                (smart-first term)
                2))))
+
+      ((is-prim-type? term)
+       (let* ([typedef-inst (get-typedef-from-tab (first term))]
+              [op-rec (prim-type-pred-op typedef-inst)])
+         (append          
+          (append-lists
+           (map term->machine-code/t (rest term)))
+          (list op-rec))))
+      
       
       ((and (not (empty? term)) (cons? term)
             (cons? (rest term)) (not (empty? (rest term))))
@@ -345,15 +373,18 @@
        )
        
       )))
+  )
 
 (: term->machine-code/t-t (term -> machine-code))
 
 (define term->machine-code/t-t ;; spielt hier diee Reihenfolge der cases eine Rolle?
   (lambda (term)
+    (begin
+        (debug-compile-term term)
     (cond
 
     
-       ((definition? (smart-first term))
+      ((definition? (smart-first term))
        (let ([identifier (first (rest term))]
              [expression (first (rest (rest term)))])
          (if (base? expression)
@@ -419,7 +450,7 @@
          (map term->machine-code/t (rest term)))            
         (list (make-heap-alloc))))
 
-       ;; Umsetzung der Freigabe einer Bindung auf dem Heap
+      ;; Umsetzung der Freigabe einer Bindung auf dem Heap
       ((heap-free-fun? term)
        (append          
         (append-lists
@@ -477,6 +508,14 @@
         (list (make-prim
                (smart-first term)
                2))))
+
+      ((is-prim-type? term)
+       (let* ([typedef-inst (get-typedef-from-tab (smart-first term))]
+              [op-rec (prim-type-pred-op typedef-inst)])
+         (append          
+          (append-lists
+           (map term->machine-code/t (rest term)))
+          (list op-rec))))
       
       ((and (not (empty? term)) (cons? term)
             (cons? (rest term)) (not (empty? (rest term))))
@@ -486,7 +525,7 @@
       ((empty? term)
        (list)
        )
-      )))
+      ))))
 
 ;; Hier wird der Code einer Abstraktion aufgesammelt
 (define abstraction-code-collect
@@ -543,9 +582,7 @@
 (define compile-secd
   (lambda (term)    
     (define value 
-      (inject-secd term))
-    
-   
+      (inject-secd term))  
     (begin
       (compile-stack 'push! value )
       (make-ast
@@ -560,16 +597,16 @@
   (lambda (fname)
     (let* ([file-port (open-input-file fname) ]
            [buffer (read-datum file-port)])
-    (read-the-file  file-port  buffer))))
+      (read-the-file  file-port  buffer))))
 
 (define read-the-file
   (lambda (file-port content)    
     (let ([cont-read  (read-datum file-port)])
       (if (eof-object?  cont-read)
           content
-         (read-the-file file-port    
-                                (append content
-                                        (list cont-read))))
+          (read-the-file file-port    
+                         (append content
+                                 (list cont-read))))
       )))
 
 (define read-analyze-compile
@@ -583,15 +620,15 @@
   (lambda (sources result)
     (begin
       (let ([files-content (append-lists (map (lambda (element)
-                                 (read-source-content element))
-                                sources))])
-      (make-ast
-       compile-stack
-       (secd-code (inject-secd
-                       files-content))
-       empty
-       the-empty-environment 
-       empty)))))
+                                                (read-source-content element))
+                                              sources))])
+        (make-ast
+         compile-stack
+         (secd-code (inject-secd
+                     files-content))
+         empty
+         the-empty-environment 
+         empty)))))
                    
         
         

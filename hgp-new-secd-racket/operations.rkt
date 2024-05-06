@@ -1,14 +1,14 @@
-#lang scheme/base
+#lang racket
 (require "secd-vm-defs.rkt"
          "stack.rkt")
-(provide make-push! make-pop! prim-type-pred-op)
+(provide push! pop! prim-type-pred-op)
 
 (define push!-tmpl (make-op 'push! (lambda (the-stack value)
                                      (the-stack 'push! value)) (list) 0 1 1))
 (define pop!-tmpl (make-op 'pop! (lambda (the-stack)
                                    (the-stack 'pop!)) (list) 0 0 0))
  
-(define make-push! (lambda (in-values)
+(define push! (lambda (in-values)
                      (make-op (op-code push!-tmpl)
                               (op-operation push!-tmpl)
                               in-values
@@ -18,7 +18,7 @@
                               )
                      ))
 
-(define make-pop! (lambda ()
+(define pop! (lambda ()
                     (make-op (op-code pop!-tmpl)
                              (op-operation pop!-tmpl)
                              (op-params pop!-tmpl)
@@ -29,7 +29,7 @@
 
 
 (define prim-type-pred-op
-  (lambda (type-def)
-    (make-op 'nothing-to-set (prim-type-pred type-def)
+  (lambda (predicate)
+    (make-op 'nothing-to-set predicate 
                                  'place-holder 0 0 0)
     ))

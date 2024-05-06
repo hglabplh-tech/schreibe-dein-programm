@@ -1,9 +1,5 @@
-;;#lang deinprogramm/sdp/advanced
-(require
-  (only-in   racket
-             print
-             [print debug-print])
-  "secd-vm-defs.rkt"
+#lang racket
+ (require  "secd-vm-defs.rkt"
   "stack.rkt"
   "operations.rkt")
 
@@ -20,7 +16,19 @@
  print-stack-env-code
  debug-snap-heap
  debug-compile-term
+ write-newline
+ write-string
+ print-out-code
  )
+
+
+(define  write-newline
+  (lambda ()
+  (writeln " ")))
+
+(define  write-string
+  (lambda (str)
+    (print str)))
 
 (define debug-snap-stack
   (lambda (op-stack   message)
@@ -34,23 +42,23 @@
     (begin
       (write-object-nl message)
       (write-newline)          
-      (debug-print "------ Begin Actual Env --------------")
+      (print "------ Begin Actual Env --------------")
       (write-newline)
       (if (not (empty? act-env))      
           (for-each (lambda (bind)
                       (begin
                         (write-newline)
-                        (debug-print "------ Begin Binding --------------")
+                        (print "------ Begin Binding --------------")
                         (write-newline)
-                        (debug-print (binding-variable bind))
+                        (print (binding-variable bind))
                         (write-newline)
-                        (debug-print (binding-value bind))
+                        (print (binding-value bind))
                         (write-newline)
-                        (debug-print "------ End Binding --------------")
+                        (print "------ End Binding --------------")
                         (write-newline)))
                     act-env)
           (write-newline))
-      (debug-print "------ End Actual Env --------------")
+      (print "------ End Actual Env --------------")
       (write-newline)
       )))
 
@@ -60,23 +68,23 @@
     (begin
       (write-object-nl message)
       (write-newline)          
-      (debug-print "------ Begin The Heap --------------")
+      (print "------ Begin The Heap --------------")
       (write-newline)
       (if (not (empty? the-heap))      
           (for-each (lambda (bind)
                       (begin
                         (write-newline)
-                        (debug-print "------ Begin Heap Cell --------------")
+                        (print "------ Begin Heap Cell --------------")
                         (write-newline)
-                        (debug-print (heap-cell-variable bind))
+                        (print (heap-cell-variable bind))
                         (write-newline)
-                        (debug-print (heap-cell-init-value bind))
+                        (print (heap-cell-init-value bind))
                         (write-newline)
-                        (debug-print "------ End Heap Cell --------------")
+                        (print "------ End Heap Cell --------------")
                         (write-newline)))
                     the-heap)
                     (write-newline))
-      (debug-print "------ End The Heap --------------")
+      (print "------ End The Heap --------------")
       (write-newline)
       ))))
 
@@ -148,19 +156,7 @@
      
       )))
 
-(define debug-to-print-abst
-  (lambda (abst-rec message)
-    (begin
-      (write-object-nl message)
-      (debug-print "------ Begin Abstraction--------------")
-      (write-newline)
-      (debug-print (abst-variable abst-rec))
-      (write-newline)
-      (debug-print (abst-code abst-rec))
-      (write-newline)
-      (debug-print "------ End Abstraction --------------")
-      (write-newline)
-      )))
+
 
 (define debug-to-print-secd
   (lambda (secd-rec message)
@@ -180,7 +176,7 @@
       (debug-snap-env (secd-environment secd-rec) message)
       (write-object-nl  "------------ End SECD ENV --------------------")
       (write-object-nl  "------------ Begin SECD  CODE--------------------")
-      (debug-print (secd-code secd-rec))
+      (print (secd-code secd-rec))
       (write-object-nl  "------------ End SECD CODE--------------------")
       (debug-snap-dump (secd-dump secd-rec) message)
       (write-object-nl  "------------Begin SECD Heap--------------------")
@@ -193,7 +189,7 @@
   (lambda (message)
     (begin
       (write-newline)
-      (debug-print message)
+      (print message)
       (write-newline)
       )))
 
@@ -215,4 +211,143 @@
            (write-object-nl  "------------ Begin ACT CODE --------------------")
       (write-object-nl  code)
       (write-object-nl  "------------ End ACT CODE --------------------")
+      )))
+
+
+;; AST-Printer
+(define debug-to-print-ast-code
+  (lambda (ast-rec)
+    (print-out-code (ast-code ast-rec))
+    ))
+
+(define print-out-code
+  (lambda (code)
+    (if (empty? (rest code))
+        'return
+        (let ([next-code (rest code)])
+    (cond
+      ((empty? code)
+       'ready)
+      ((define-def? (first code))
+       (debug-to-print-define-def (first code))
+       (print-out-code next-code)
+      )
+      ((abst? (first code))
+       (debug-to-print-abst (first code))
+       (print-out-code next-code)
+            )
+      ((conditions? (first code))
+       (debug-to-print-conds (first code))
+       (print-out-code next-code))
+
+       ((single-cond? (first code))
+       (debug-to-print-single-cond (first code))
+       (print-out-code next-code))
+
+        ((op? (first code))
+       (debug-to-print-op (first code))
+       (print-out-code next-code))
+
+        ((where? (first code))
+         (debug-to-print-where (first code))
+         (print-out-code next-code))
+        
+        ((code-block? (first code))
+         (print-out-code (code-block-code (first code)))
+         (print-out-code next-code))
+
+        ((heap-alloc? (first code))
+         (write-object-nl 'heap-alloc)
+          (print-out-code next-code))
+
+         ((heap-free? (first code))
+          (write-object-nl 'heap-free)
+          (print-out-code next-code))
+
+          ((heap-set-at!? (first code))
+           (write-object-nl 'heap-set-at!)
+          (print-out-code next-code))
+         
+          ((heap-get-at? (first code))
+           (write-object-nl 'heap-get-at)
+          (print-out-code next-code))
+
+          ((ap? (first code))
+           (write-object-nl 'ap)
+           (print-out-code next-code))
+
+           ((tailap? (first code))
+           (write-object-nl 'tailap)
+           (print-out-code next-code))
+         
+                 
+      
+      )))))
+
+    (define debug-to-print-where
+      (lambda (where-rec)
+        (print "Begin Cond - Branch")
+        (print-out-code
+         (where-condition where-rec))
+         (print-out-code (where-if-branch where-rec))
+        (print-out-code (where-else-branch where-rec))
+        ))
+
+(define debug-to-print-op
+  (lambda (op-rec)
+    (write-newline)
+    (print "----------- Op - Start --------------")
+    (write-newline)
+  (print  (op-code op-rec))
+     (write-newline)
+   (print (op-operation op-rec))
+     (write-newline)
+   (print (op-params op-rec))
+     (write-newline)
+   (print (op-stack-arity op-rec))
+     (write-newline)
+   (print (op-stack-out op-rec))
+       (write-newline)
+   (print (op-parm-arity op-rec))
+
+    (write-newline)
+    (print "---------- Op - End ---------- ")))
+
+(define debug-to-print-conds
+  (lambda (conds-rec)
+     (print "------ Begin conditions --------------")
+    (write-newline)
+    (conditions-conds conds-rec)
+    (print-out-code (conditions-conds conds-rec))
+    (print "------ En conditions --------------")))
+
+(define debug-to-print-single-cond
+  (lambda (cond-rec)
+     (print "------ Begin conditions --------------")
+    (write-newline)
+   (print-out-code (single-cond-what  cond-rec))
+   (print-out-code (single-cond-code cond-rec))
+    (print "------ En conditions --------------")))
+    
+(define debug-to-print-define-def
+  (lambda (define-def-rec)
+    (print "------ Begin define--------------")
+    (write-newline)
+    (print (define-def-bind define-def-rec))    
+    (write-newline)
+    (print-out-code (define-def-value define-def-rec))
+     (print "------ End define Abstraction--------------")
+    
+     ))
+(define debug-to-print-abst
+  (lambda (abst-rec)
+    (begin
+      (print "------ Begin Abstraction--------------")
+      (write-newline)
+      (print (abst-variable abst-rec))
+      (write-newline)
+      (print-out-code  (abst-code abst-rec))
+      (write-newline)
+      (print "------ End Abstraction --------------")
+      (write-newline)
       )))

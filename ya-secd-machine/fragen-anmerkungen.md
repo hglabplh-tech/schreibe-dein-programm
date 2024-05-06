@@ -15,3 +15,6 @@ Hier Fehlt auch diee Herleitung wie das ganze mit mehreren Parametern definiert 
 
 Frage: Wie tief soll man da bei Vorlesungen einsteigen
 
+Persönlich Frage: Hast du Grundlagen-Material zur theoretischen Begründung der Induktiven Beweisführung bei manchem fehlt mir etwas der theoretische Hintergrund... Ich weiß was es ist und wie man es anwendet aber warum das so ist und wie man das herleitt da fehlt ein wenig 
+
+
