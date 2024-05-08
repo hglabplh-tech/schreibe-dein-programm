@@ -1,7 +1,8 @@
 #lang racket
 
 (require rnrs/records/syntactic-6
-         "stack.rkt")
+         "stack.rkt"
+         "secd-dbg-print-it.rkt")
   
 ;;(list-data? 5)
 ;;(list-data?  '(6 7 8 9))
@@ -167,7 +168,8 @@
          debug-channel
          debug-on
          debug-inf
-         set-debug-on!)
+         set-debug-on!
+         send-dbg-cmd)
 
 ;;Hier der "Prozessor" Befehlssatz - als Idee
 (define op-code-syms '(  push pop peek create-const
@@ -1034,11 +1036,26 @@
     (print (list "next code: " (secd-code secd-rec)))
     ))
 
+(define env->lists
+  (lambda (env-list)
+    (let the-loop
+      ([intern-lst env-list]
+       [result empty])
+      (if (empty? intern-lst)
+          result
+          (the-loop (rest intern-lst)
+                    (append result
+                            (cons (list (binding-variable
+                                         (first intern-lst)))
+                                  (list (binding-value
+                                         (first intern-lst)))
+                                  )))))))
+               
+
 (define show-env
   (lambda (secd-rec)
-    (print (list "env content is: " (secd-environment secd-rec)))
-    ))
-
+    (display-env (env->lists (secd-environment secd-rec)))))
+   
 (define show-op-stack
   (lambda (secd-rec)
     (print (list "op stack is: " ((secd-stack secd-rec) 'print-stack)))
@@ -1054,7 +1071,24 @@
     (print (list "heap content is: " (secd-heap secd-rec)))
     ))
 
+(define show-dump
+  (lambda (secd-rec)
+    (println (secd-dump secd-rec))))
 
+(define print-help
+  (lambda (dummy)
+    (println (string-append "step"             ":: step through code ::"))
+    (println (string-append "continue"         ":: continue to next break ::"))
+    (println (string-append "show-next-code"   ":: show he next code sequence to be executed ::"))
+    (println (string-append "show-env"         ":: show content of environment ::"))
+    (println (string-append "show-dump"        ":: show the conrtent of the dump ::"))
+    (println (string-append "show-op-stack"    ":: show the operations stack ::"))
+    (println (string-append "show-fun-stack"   ":: show the functions stack ::"))
+    (println (string-append "show-heap"        ":: show the heap content ::"))
+    (println (string-append "dbg-restart"      ":: restart thread of secd for fresh debug ::"))
+    (println (string-append "quit"             ":: quit debug ::"))
+    (println (string-append "show-help"        ":: show this help ::"))
+    ))
 
 (define debug-cmd-pairs
   (list
@@ -1062,13 +1096,28 @@
    (list "continue" go-next-criteria)
    (list "show-next-code" show-next-code)
    (list "show-env" show-env)
+   (list "show-dump" show-dump)
    (list "show-op-stack" show-op-stack)
    (list "show-fun-stack" show-fun-stack)
    (list "show-heap" show-heap)
+   (list "show-help" print-help)
    ))
 
+
+(define the-dbg-channel (make-channel))
+
 (define debug-channel
-  (make-channel))
+  (lambda (cmd)
+  (letrec ([res-channel (cond
+    ((equal? cmd 'init)
+             (set! the-dbg-channel (make-channel))
+             the-dbg-channel)
+    (else the-dbg-channel))])
+    res-channel)))
+    
+
+
+
 (define debug-on #f)
 
 (define debug-inf (make-debug-info '() #f))
@@ -1081,14 +1130,17 @@
     (let until-cont ([command dbg-cmd])
       (let* ([cmd-fun-pair (assoc command debug-cmd-pairs)]
              [cmd-fun (if (not (eq? cmd-fun-pair #f))
-                               (second cmd-fun-pair)
-                               go-next-step)])
+                          (second cmd-fun-pair)
+                          go-next-step)])
         (cmd-fun secd-rec)
-        (if (or (eq? command "continue")
-                (eq? command "step"))
-            'end
-            (until-cont (channel-get debug-channel))
-            )
+        (if (or (equal? command "continue")
+                (equal? command "step"))
+            (begin (println "step /continue reached ")
+                   'end)
+            (begin
+              (println "next command is there")
+              (until-cont (channel-get (debug-channel 'none)))
+              ))
         )
       )))
 
@@ -1097,29 +1149,38 @@
     (let recur-it ([the-list criteria-list])
 
       (let ([cmd (if (not (empty? the-list))
-                            (first the-list)
-                            '())])
+                     (first the-list)
+                     '())])
         (if (empty? cmd)
-          #f
-          (if (cmd the-rec)
-              #t
-              (recur-it (rest the-list))
-              ))))))
+            #f
+            (if (cmd the-rec)
+                #t
+                (recur-it (rest the-list))
+                ))))))
 
 (define debug-step
   (lambda (secd-rec)
-    (let ([dbg-cmd (channel-get debug-channel)])
+    (let ([dbg-cmd (channel-get (debug-channel 'none))])
       (if debug-on
           (begin
             (cond
               ((not (empty? ( debug-info-break-criteria-list debug-inf)))
                (let ([criteria-list (( debug-info-break-criteria-list debug-inf))])
                  (if (check-if-in-crit (first (secd-code secd-rec)) criteria-list)
-                     (process-dbg-cmd dbg-cmd secd-rec)
+                     (begin
+                       (println "process debug command loop // conditional:")
+                       (process-dbg-cmd dbg-cmd secd-rec)
+                       (println "END process loop ->")
+                       secd-rec
+                       )
                      secd-rec)))
-              (else  (process-dbg-cmd dbg-cmd secd-rec)))              
-              
-            )
+              (else  (begin
+                       (println "process debug command loop // stepping mode")
+                       (process-dbg-cmd dbg-cmd secd-rec)
+                       (println "END process loop ->")
+                       secd-rec
+                       ))))
+          ;; (channel-put dbg-input-channel 'do-input))
           debug-on))))
 
 
@@ -1129,7 +1190,7 @@
 
 (define send-dbg-cmd
   (lambda (dbg-cmd)
-    (channel-put debug-channel dbg-cmd)
+    (channel-put (debug-channel 'none) dbg-cmd)
     ))
 
 (define set-debug-on!

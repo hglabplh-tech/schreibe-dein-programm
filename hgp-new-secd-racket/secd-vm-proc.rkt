@@ -33,9 +33,8 @@
         state
         (begin           
         (let ([secd-rec (really-process state)])
-         (debug-step secd-rec)
           (secd-step* secd-rec)
-          secd-rec
+          (debug-step secd-rec)          
           )))))
 
 (define secd-exec-prim
@@ -50,12 +49,12 @@
           (secd-heap state))])
            (debug-step secd-ret)
            secd-ret
-           )
-         (begin           
+           )       
            (let ([secd-rec (really-process state)])
              (debug-step secd-rec)
              (secd-exec-prim secd-rec)
-             secd-rec)))))
+             (debug-step secd-rec)
+             secd-rec))))
 
 
 (define call-abstract-pop! (lambda (term op-stack)
